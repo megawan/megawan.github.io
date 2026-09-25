@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title></title>
+<title>Gika – cloud engineer and pirate-RPG builder</title>
 <meta name="description" content="A small sailing game that doubles as my homepage. Steer to an island to see my cloud work, notes and pirate RPG.">
 <meta name="theme-color" content="#0a1f26">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -52,6 +52,7 @@
     padding: 0.4rem 0.75rem; background: rgba(10, 31, 38, 0.8);
     border: 2px solid var(--brass); box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.45);
     color: var(--foam);
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent;
   }
   .btn:hover, .btn[aria-pressed="true"] { background: var(--brass); color: var(--ink); }
   .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45); }
@@ -79,6 +80,8 @@
   .stats { display: flex; align-items: center; gap: 0.9rem; padding: 0.35rem 0.7rem; font-size: 1.05rem; white-space: nowrap; }
   .wind { display: inline-flex; align-items: center; gap: 0.4rem; }
   #windArrow { display: inline-block; width: 22px; height: 22px; }
+  .wanted { color: #ff8a7a; font-family: var(--display); font-size: 1.15rem; }
+  .wanted[hidden] { display: none; }
   .hull { display: inline-flex; gap: 2px; align-items: center; }
   .hull i { width: 8px; height: 13px; background: var(--brass); border: 1px solid var(--ink); }
   .hull i.off { background: transparent; border-color: rgba(223, 233, 228, 0.35); }
@@ -106,6 +109,8 @@
   .ptr { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 1.2rem; color: var(--brass); }
   .ptr.ghost { color: #7dffb0; }
   .ptr.ghost .arr { border-left-color: #7dffb0; }
+  .ptr.navy { color: #ff8a7a; }
+  .ptr.navy .arr { border-left-color: #ff8a7a; }
   .ptr .arr {
     width: 0; height: 0; border-left: 14px solid var(--brass);
     border-top: 8px solid transparent; border-bottom: 8px solid transparent;
@@ -141,6 +146,8 @@
   #start:hover { background: #efcf85; }
   #skip { border-color: transparent; background: transparent; box-shadow: none; text-decoration: underline; text-underline-offset: 0.25em; font-family: var(--body); font-size: 1.15rem; padding: 0.4rem 0.5rem; }
   #skip:hover { background: transparent; color: var(--brass); }
+  #intro .fine { margin: 1.5rem 0 0; font-size: 1rem; font-style: normal; opacity: 0.7; max-width: 30rem; }
+  #intro .fine[hidden] { display: none; }
 
   /* ---------- island panel ---------- */
   #panel {
@@ -164,6 +171,26 @@
     box-shadow: 3px 3px 0 rgba(90, 58, 24, 0.5);
   }
   .scroll .close:hover { background: #7a1d16; border-color: #7a1d16; color: #fff; }
+
+  .scroll .shop { margin-top: 1.4rem; padding-top: 1rem; border-top: 3px double #5a3a18; }
+  .scroll .shop h3 { margin: 0 0 0.3rem; font-family: var(--display); font-weight: 400; font-size: 1.8rem; line-height: 1; }
+  .scroll .shop ul { list-style: none; margin: 0; padding: 0; }
+  .scroll .shop li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.45rem 0; border-bottom: 1px dashed rgba(90, 58, 24, 0.4); font-size: 1.2rem; }
+  .scroll .shop small { font-size: 1rem; opacity: 0.75; }
+  .scroll .shop .pips { letter-spacing: 2px; color: #7a1d16; }
+  .scroll .shop .maxed { font-style: italic; opacity: 0.7; }
+  .scroll .buy { background: var(--ink); color: var(--paper); border-color: var(--ink); box-shadow: 3px 3px 0 rgba(90, 58, 24, 0.5); white-space: nowrap; }
+  .scroll .buy:hover:not(:disabled) { background: #7a1d16; border-color: #7a1d16; color: #fff; }
+  .scroll .buy:disabled, .scroll .buy:disabled:hover { opacity: 0.4; cursor: not-allowed; box-shadow: none; background: var(--ink); color: var(--paper); }
+  .scroll .livery { margin-top: 1.1rem; padding-top: 0.9rem; border-top: 1px dashed rgba(90, 58, 24, 0.4); }
+  .scroll .livery h4 { margin: 0 0 0.5rem; font-family: var(--display); font-weight: 400; font-size: 1.5rem; }
+  .scroll .swatches { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  .scroll .swatch {
+    width: 2.5rem; height: 2.5rem; border-radius: 50%; padding: 0; cursor: pointer;
+    border: 3px solid rgba(90, 58, 24, 0.5); touch-action: manipulation;
+  }
+  .scroll .swatch[aria-pressed="true"] { border-color: #7a1d16; box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px #7a1d16; }
+  .scroll .lname { margin: 0.55rem 0 0; font-size: 1.1rem; opacity: 0.8; }
 
   @media (max-width: 40rem) {
     .btn { font-size: 1.05rem; padding: 0.35rem 0.55rem; }
@@ -204,6 +231,7 @@
       <svg id="windArrow" viewBox="-12 -12 24 24" aria-hidden="true"><path d="M-9 0H7M2 -6L9 0L2 6" fill="none" stroke="#d1a94f" stroke-width="2.5" stroke-linecap="square"/></svg>
       <span id="knots">0 kn</span>
     </span>
+    <span class="wanted" id="wanted" hidden title="The navy is hunting you.">Wanted</span>
     <span class="hull" id="hull" role="img" aria-label="Hull 5 of 5" title="Hull. Harbors repair it."><i></i><i></i><i></i><i></i><i></i></span>
     <span><span id="loot">0</span> barrels</span>
   </div>
@@ -218,12 +246,13 @@
 
 <div id="intro">
   <div class="intro-inner">
-    <h1>Cloud engineer by day, pirate-RPG builder by night.</h1>
+    <h1>I architect the clouds by day, build worlds by night.</h1>
     <p>This site is a small sailing game. Steer to an island to see what's there.</p>
     <div class="intro-actions">
       <button class="btn" type="button" id="start">Set sail</button>
       <button class="btn" type="button" id="skip">Skip the sailing</button>
     </div>
+    <p class="fine" id="visits" hidden></p>
   </div>
 </div>
 
@@ -237,24 +266,36 @@
 <!-- EDIT: the text of each island lives here. Change it freely. -->
 <template id="tpl-home-port">
   <h2>Home Port</h2>
-  <p>On weekdays I build cloud infrastructure and write code. Evenings go to Treasure Island, where I'm a pirate and a game designer.</p>
+  <p>Navigate the seas, find what you're looking for, or just enjoy the voyage.</p>
   <p><a href="https://github.com/megawan">github.com/megawan</a></p>
+</template>
+<!-- EDIT: shown when a sunken chest is found. n = how many found so far, total = how many exist. -->
+<template id="tpl-chest-more">
+  <h2>Sunken chest</h2>
+  <p>Chest <span data-n></span> of <span data-total></span>. Inside: six barrels and a soggy note that says there are more of these out there.</p>
+</template>
+<template id="tpl-chest-last">
+  <h2>The last chest</h2>
+  <p>That's all <span data-total></span>. Six more barrels, and a way to say hello.</p>
+  <p><a href="https://github.com/megawan">github.com/megawan</a></p>
+  <!-- EDIT: add your email or CV link here, e.g.
+       <p><a href="mailto:you@example.com">Email me</a></p> -->
 </template>
 <template id="tpl-cloud-cove">
   <h2>Cloud Cove</h2>
-  <p>Cloud infrastructure and the automation around it. I like building things that other engineers can pick up and reuse without a guided tour.</p>
+  <p>Cloud infrastructure and the automation around it. I like building things that other people can pick up and reuse without a guided tour.</p>
   <p><a href="https://github.com/megawan?tab=repositories">Browse my repositories</a></p>
 </template>
 <template id="tpl-logbook-bay">
   <h2>Logbook Bay</h2>
-  <p>Short write-ups of problems I've solved, written so I can find them again later.</p>
+  <p>Short write-ups of problems I've solved and written so I can find them again later.</p>
   <p class="soon">The first entries are on their way.</p>
   <!-- EDIT: when you have a post, replace the line above with a link, e.g.
        <p><a href="/posts/my-first-post.html">Why my workflow ignored the tag push</a></p> -->
 </template>
 <template id="tpl-treasure-island">
   <h2>Treasure Island</h2>
-  <p>A narrative pirate RPG in 2D pixel art, built solo in Unity. Maps, scene transitions, combat, and a story I'm scripting chapter by chapter. Right now I'm writing chapter 3.</p>
+  <p>The thing I pour my evenings into: a pirate RPG with open worlds, and still under construction.</p>
   <p class="soon">Not public yet. More soon.</p>
 </template>
 
@@ -291,6 +332,48 @@ function hash2(x, y) {
 }
 const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+
+/* =========================================================
+   visit analytics (optional, no cookies)
+   ---------------------------------------------------------
+   1. Make a free account at https://www.goatcounter.com
+   2. Put your site code below, e.g. 'gika' for gika.goatcounter.com
+   3. In GoatCounter: Settings > Site > tick "Allow adding visitor counts
+      on your website" if you want the visit total shown on the intro screen.
+   Leave it empty and nothing is loaded or sent anywhere.
+   ========================================================= */
+const GOATCOUNTER = '';
+
+const Stats = (() => {
+  const code = String(GOATCOUNTER || '').trim().toLowerCase();
+  const on = /^[a-z0-9-]+$/.test(code);
+  const sent = new Set();
+  return {
+    on,
+    // one event per name per visit, so the numbers mean "visits that did this"
+    track(name, title) {
+      if (!on || sent.has(name)) return;
+      sent.add(name);
+      try { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: name, title: title || name, event: true }); } catch (_) {}
+    },
+    init() {
+      if (!on) return;
+      const s = document.createElement('script');
+      s.async = true; s.src = 'https://gc.zgo.at/count.js';
+      s.dataset.goatcounter = 'https://' + code + '.goatcounter.com/count';
+      document.head.appendChild(s);
+      const note = $('#visits'); if (!note) return;
+      const base = 'Visits are counted anonymously, without cookies.';
+      note.hidden = false; note.textContent = base;
+      if (typeof fetch === 'function') {
+        fetch('https://' + code + '.goatcounter.com/counter/TOTAL.json')
+          .then(r => r.ok ? r.json() : Promise.reject())
+          .then(d => { if (d && d.count) note.textContent = base + ' ' + d.count + ' visits so far.'; })
+          .catch(() => {});
+      }
+    },
+  };
+})();
 
 /* =========================================================
    world
@@ -497,6 +580,9 @@ const Sfx = (() => {
     coin() { tone(660, 660, 0.09, 'square', 0.07); tone(990, 990, 0.14, 'square', 0.07, 0.08); },
     thud() { burst(0.3, 500, 'lowpass', 0.5, 0.7, 90); tone(90, 40, 0.28, 'sine', 0.4); },
     sink() { burst(0.9, 900, 'lowpass', 0.5, 0.7, 70); tone(220, 45, 0.9, 'sawtooth', 0.14); },
+    rumble() { burst(1.6, 160, 'lowpass', 0.5, 0.7, 60); tone(58, 38, 1.6, 'sine', 0.3); },
+    roar() { burst(1.0, 700, 'lowpass', 0.55, 0.7, 90); tone(120, 42, 1.0, 'sawtooth', 0.16); tone(90, 36, 1.1, 'sawtooth', 0.12, 0.05); },
+    horn() { tone(196, 196, 0.35, 'sawtooth', 0.06); tone(147, 147, 0.55, 'sawtooth', 0.06, 0.38); },
     eerie() { tone(196, 185, 1.2, 'sine', 0.09); tone(208, 196, 1.2, 'sine', 0.07, 0.05); },
   };
 })();
@@ -515,19 +601,27 @@ function resize() {
 }
 
 const PAL_PLAYER = { hull: '#4a2f17', deckA: '#a8783f', deckB: '#8f6533', cabin: '#6b4a2a', sail: '#efe3c2', sailE: '#bfae82', mast: '#3a2412', flag: '#b3261e', ghost: false };
+const PAL_NAVY   = { hull: '#1c2c4a', deckA: '#8a94a3', deckB: '#737d8c', cabin: '#2c3f63', sail: '#f2f2f2', sailE: '#6f8fc4', mast: '#101a2e', flag: '#e23b2e', ghost: false, w: 6.5 };
+const PAL_MERCH  = { hull: '#5a3d1c', deckA: '#c9a14a', deckB: '#b08a3a', cabin: '#8a5a2a', sail: '#f6e7a6', sailE: '#d18b3a', mast: '#3a2412', flag: '#4fb8b0', ghost: false, w: 7.5, cargo: true };
 const PAL_GHOST  = { hull: '#1f3a3a', deckA: '#6f9c94', deckB: '#5d8780', cabin: '#2d4d4b', sail: '#a9e6d3', sailE: '#5fae98', mast: '#16302f', flag: '#3cff9a', ghost: true };
 function makeShip(pal) {
   const c = document.createElement('canvas'); c.width = 34; c.height = 22;
   const g = c.getContext('2d'); const cx = 17, cy = 11;
   for (let i = -9; i <= 14; i++) {
     const t = (i + 9) / 23;
-    const half = 6 * Math.sqrt(Math.max(0, 1 - Math.pow((t - 0.35) / 0.65, 2)));
+    const half = (pal.w || 6) * Math.sqrt(Math.max(0, 1 - Math.pow((t - 0.35) / 0.65, 2)));
     const ho = Math.round(half), hi = Math.round(half - 1.6);
     g.fillStyle = pal.hull; g.fillRect(cx + i, cy - ho, 1, 2 * ho + 1);
     for (let y = -hi; y <= hi; y++) { g.fillStyle = ((y + 20) % 3 === 0) ? pal.deckB : pal.deckA; g.fillRect(cx + i, cy + y, 1, 1); }
   }
   g.fillStyle = pal.hull; g.fillRect(cx + 14, cy, 4, 1);
   g.fillStyle = pal.cabin; g.fillRect(cx - 8, cy - 3, 4, 7);
+  if (pal.cargo) {
+    for (const [ox, oy] of [[2, -5], [2, 2], [10, -4], [10, 2]]) {
+      g.fillStyle = '#5a3a18'; g.fillRect(cx + ox, cy + oy, 4, 3);
+      g.fillStyle = '#9a6a35'; g.fillRect(cx + ox, cy + oy, 4, 1);
+    }
+  }
   for (const mx of [-1, 6]) {
     for (let y = -8; y <= 8; y++) {
       if (pal.ghost && hash2(mx * 13 + y, y * 7 + mx) > 0.8) continue;   // tattered sails
@@ -543,18 +637,90 @@ function makeShip(pal) {
   sg.globalCompositeOperation = 'source-in'; sg.fillStyle = '#000'; sg.fillRect(0, 0, 34, 22);
   return { body: c, shadow: s };
 }
-let shipSprite, ghostSprite;
+let shipSprite, ghostSprite, navySprite, merchSprite;
+
+/* ship color themes, picked for free at Home Port; purely cosmetic */
+const LIVERIES = {
+  classic: { name: 'Classic Oak',     hull: PAL_PLAYER.hull, deckA: PAL_PLAYER.deckA, deckB: PAL_PLAYER.deckB, cabin: PAL_PLAYER.cabin, sail: PAL_PLAYER.sail, sailE: PAL_PLAYER.sailE, mast: PAL_PLAYER.mast, flag: PAL_PLAYER.flag },
+  crimson: { name: 'Crimson Corsair', hull: '#5a1f22', deckA: '#8a4348', deckB: '#733539', cabin: '#3d1417', sail: '#f2d9c9', sailE: '#c99c8a', mast: '#2a0e10', flag: '#1c1c1c' },
+  royal:   { name: 'Royal Navy',      hull: '#1c2c4a', deckA: '#8a94a3', deckB: '#737d8c', cabin: '#2c3f63', sail: '#f2f2f2', sailE: '#6f8fc4', mast: '#101a2e', flag: '#e2b83b' },
+  jade:    { name: 'Jade Marauder',   hull: '#1f4a3a', deckA: '#4f8f74', deckB: '#3f7a62', cabin: '#123326', sail: '#d9f2df', sailE: '#8fc4a2', mast: '#0a1f18', flag: '#e2b83b' },
+  gold:    { name: 'Golden Hoard',    hull: '#5a3d1c', deckA: '#e2b83b', deckB: '#c9a12e', cabin: '#3a2412', sail: '#fff4d1', sailE: '#e2c97a', mast: '#2a1a0c', flag: '#1c1c1c' },
+};
+const cosmetics = { livery: 'classic' };
+function applyLivery() { shipSprite = makeShip({ ...LIVERIES[cosmetics.livery], ghost: false }); }
+function selectLivery(key) {
+  if (!LIVERIES[key] || cosmetics.livery === key) return;
+  cosmetics.livery = key; applyLivery(); Sfx.coin(); persist();
+  Stats.track('shop/livery-' + key, 'Selected livery ' + LIVERIES[key].name);
+  renderShop();
+}
 
 /* =========================================================
    game state
    ========================================================= */
-const state = { started: false, docked: null, near: null, night: 0, nightTarget: 0, t: 0, loot: 0 };
+const state = { started: false, docked: null, near: null, night: 0, nightTarget: 0, t: 0, loot: 0, wanted: 0 };
 const ship = { x: 480, y: 800, heading: 0, speed: 0 };
 const cam = { x: 0, y: 0 };
 const wind = { ang: 0.9, g: 1, x: 1, y: 0 };
+const storm = { active: false, level: 0, timer: 55 + Math.random() * 35, dur: 0, total: 0, flashT: 4 + Math.random() * 5, flash: 0 };
+const RAIN = []; const RAIN_ANG = 1.15;
+function ensureRain() { while (RAIN.length < 130) RAIN.push({ x: Math.random() * 2000, y: Math.random() * 1200, l: 8 + Math.random() * 9, s: 480 + Math.random() * 260 }); }
+function updateStorm(dt) {
+  if (!state.started || state.docked) return;
+  if (!storm.active) {
+    storm.timer -= dt;
+    if (storm.timer <= 0) {
+      storm.active = true; storm.dur = storm.total = 22 + Math.random() * 16;
+      toast('A storm rolls in.', 2600); Sfx.rumble(); Stats.track('game/storm-start', 'Storm started');
+    }
+  } else {
+    storm.dur -= dt;
+    const rampIn = clamp((storm.total - storm.dur) / 3, 0, 1);
+    storm.level = clamp(Math.min(rampIn, storm.dur < 3 ? Math.max(0, storm.dur) / 3 : 1), 0, 1);
+    storm.flashT -= dt;
+    if (storm.flashT <= 0) { storm.flash = 1; storm.flashT = 3.5 + Math.random() * 6.5; Sfx.rumble(); }
+    if (storm.dur <= 0) {
+      storm.active = false; storm.level = 0; storm.timer = 75 + Math.random() * 70;
+      toast('The storm passes.', 2400); Stats.track('game/storm-end', 'Storm ended');
+    }
+  }
+  storm.flash = Math.max(0, storm.flash - dt * 2.4);
+  if (storm.level > 0.01) {
+    ensureRain();
+    const dx = Math.cos(RAIN_ANG), dy = Math.sin(RAIN_ANG);
+    for (const r of RAIN) {
+      r.x += dx * r.s * dt; r.y += dy * r.s * dt;
+      if (r.y > 1200 || r.x > 2000) { r.y = -20; r.x = Math.random() * 2000; }
+    }
+    if (state.started && !state.docked) ship.heading += Math.sin(state.t * 3.1 + ship.x * 0.01) * 0.3 * storm.level * dt;
+  }
+}
 const keys = { left: false, right: false, up: false, down: false };
 let autopilot = null, pdown = false, shake = 0, cooldown = 0, wakeT = 0, edgeToast = 0, lootMilestone = 0;
-const MAX = 78, ACC = 55, DRAG = 20, TURN = 2.2;
+const BASE_MAX = 112, ACC = 82, DRAG = 26, TURN = 2.6;   // BASE_MAX = starting top speed
+let MAX = BASE_MAX, gunCd = 0.9;
+
+/* upgrades bought with barrels at Home Port. costs[] = price of each next level. */
+const UPGRADES = {
+  sails: { name: 'Sails',    desc: 'Faster ship',    costs: [5, 10, 16], apply(l) { MAX = Math.round(BASE_MAX * (1 + 0.12 * l)); } },
+  guns:  { name: 'Cannons',  desc: 'Quicker reload', costs: [4, 8, 14],  apply(l) { gunCd = [0.9, 0.75, 0.62, 0.5][l]; } },
+  hull:  { name: 'Hull',     desc: 'One more plank', costs: [6, 12],     apply(l) { setHullMax(5 + l); } },
+};
+const up = { sails: 0, guns: 0, hull: 0 };
+const save = { found: [] };
+const SAVE_KEY = 'gika-sailing-v1';
+function loadSave() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (!d) return;
+    state.loot = Math.max(0, d.loot | 0);
+    for (const k in up) up[k] = clamp((d.up || {})[k] | 0, 0, UPGRADES[k].costs.length);
+    save.found = Array.isArray(d.found) ? d.found.filter(i => i >= 0 && i < 3) : [];
+    cosmetics.livery = LIVERIES[(d.cosmetics || {}).livery] ? d.cosmetics.livery : 'classic';
+  } catch (_) {}
+}
+function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ loot: state.loot, up, found: save.found, cosmetics })); } catch (_) {} }
+function applyUpgrades() { for (const k in UPGRADES) UPGRADES[k].apply(up[k]); hull = HULL_MAX; drawHullHud(); }
 
 const balls = [], parts = [], barrels = [];
 const clouds = [0, 1, 2].map(i => ({ a: i * 2.1, rx: 110 + i * 14, ry: 70 + i * 8, s: 0.05 + i * 0.012, r: 8 - i }));
@@ -602,7 +768,7 @@ function toast(msg, ms = 2600) {
 
 function fire() {
   if (!state.started || state.docked || cooldown > 0) return;
-  cooldown = 0.9; shake = Math.max(shake, 3); Sfx.cannon();
+  cooldown = gunCd; shake = Math.max(shake, 3); Sfx.cannon();
   const fx = Math.cos(ship.heading), fy = Math.sin(ship.heading);
   for (const side of [-1, 1]) {
     const dx = Math.cos(ship.heading + side * Math.PI / 2), dy = Math.sin(ship.heading + side * Math.PI / 2);
@@ -610,7 +776,7 @@ function fire() {
       const px = ship.x + fx * off + dx * 6, py = ship.y + fy * off + dy * 6;
       const spread = (Math.random() - 0.5) * 0.12;
       const a = ship.heading + side * Math.PI / 2 + spread;
-      balls.push({ x: px, y: py, vx: fx * ship.speed + Math.cos(a) * 125, vy: fy * ship.speed + Math.sin(a) * 125, t: 0, life: 0.95 });
+      balls.push({ x: px, y: py, vx: fx * ship.speed + Math.cos(a) * 140, vy: fy * ship.speed + Math.sin(a) * 140, t: 0, life: 1.0 });
       for (let i = 0; i < 4; i++) addPart(px, py, dx * (12 + i * 5) + (Math.random() - 0.5) * 8, dy * (12 + i * 5) + (Math.random() - 0.5) * 8, 0.5 + i * 0.1, i < 1 ? '#ffb347' : '#cfd6d4', 2, 2);
     }
   }
@@ -620,6 +786,7 @@ function addLoot(n) {
   const before = state.loot; state.loot += n; $('#loot').textContent = state.loot;
   const marks = { 5: 'Five barrels. The crew is pleased.', 10: 'Ten barrels. Someone has been practising.', 20: 'Twenty barrels. The sea is running low.' };
   for (const m in marks) if (before < +m && state.loot >= +m) toast(marks[m]);
+  persist();
 }
 function breakBarrel(b) {
   b.alive = false; b.respawn = 12; Sfx.coin();
@@ -642,11 +809,84 @@ let lastFocus = null;
 function openPanel(id) {
   const tpl = $('#tpl-' + id); const isl = byId[id];
   if (!tpl || !isl) return;
+  Stats.track('island/' + id, 'Opened ' + isl.name);
   lastFocus = document.activeElement;
   panelBody.innerHTML = tpl.innerHTML;
   dialog.setAttribute('aria-label', isl.name);
   panel.hidden = false; state.docked = id; autopilot = null;
   hull = HULL_MAX; drawHullHud();   // harbors repair the ship
+  for (const k in keys) keys[k] = false;
+  $('#closePanel').textContent = 'Weigh anchor';
+  if (id === 'home-port') renderShop();
+  $('#closePanel').focus();
+}
+function renderShop(focusKey) {
+  let box = $('#shop', panelBody);
+  if (!box) { box = document.createElement('section'); box.id = 'shop'; box.className = 'shop'; panelBody.appendChild(box); }
+  let h = '<h3>Shipwright</h3><p>Spend barrels on the ship. You have <b>' + state.loot + '</b>.</p><ul>';
+  for (const k in UPGRADES) {
+    const u = UPGRADES[k], lv = up[k], max = u.costs.length, cost = u.costs[lv];
+    h += '<li><span><b>' + u.name + '</b> <span class="pips" role="img" aria-label="Level ' + lv + ' of ' + max + '">' + '\u25CF'.repeat(lv) + '\u25CB'.repeat(max - lv) + '</span><br><small>' + u.desc + '</small></span>';
+    h += lv >= max ? '<span class="maxed">Maxed</span>'
+      : '<button class="btn buy" type="button" data-up="' + k + '"' + (state.loot < cost ? ' disabled' : '') + '>' + cost + ' barrels</button>';
+    h += '</li>';
+  }
+  h += '</ul><div class="livery"><h4>Livery</h4><div class="swatches">';
+  for (const key in LIVERIES) {
+    const liv = LIVERIES[key], picked = cosmetics.livery === key;
+    h += '<button class="swatch" type="button" data-livery="' + key + '" aria-pressed="' + picked + '" aria-label="' + liv.name +
+      '" title="' + liv.name + '" style="background: linear-gradient(135deg, ' + liv.hull + ' 50%, ' + liv.sail + ' 50%);"></button>';
+  }
+  h += '</div><p class="lname">' + LIVERIES[cosmetics.livery].name + '</p></div>';
+  box.innerHTML = h;
+  if (focusKey === true) { /* livery just picked: focus stays sane via re-render, nothing to do */ }
+  else if (focusKey) { const b = box.querySelector('[data-up="' + focusKey + '"]'); if (b && !b.disabled) b.focus(); else $('#closePanel').focus(); }
+}
+function buyUpgrade(k) {
+  const u = UPGRADES[k]; if (!u) return;
+  const lv = up[k]; if (lv >= u.costs.length) return;
+  const cost = u.costs[lv]; if (state.loot < cost) return;
+  state.loot -= cost; up[k] = lv + 1; $('#loot').textContent = state.loot;
+  u.apply(up[k]); if (k === 'hull') { hull = HULL_MAX; drawHullHud(); }
+  Sfx.coin(); persist(); Stats.track('shop/' + k, 'Bought ' + u.name);
+  renderShop(k);
+}
+
+/* ---------- sunken chests (three hidden spots; found ones stay found) ---------- */
+const CHESTS = []; let glintToast = false;
+function placeChests() {
+  const r = rng(20260924), pts = [];
+  for (let tries = 0; tries < 900 && pts.length < 3; tries++) {
+    const x = 160 + r() * (WORLD_W - 320), y = 160 + r() * (WORLD_H - 320);
+    if (insideLand(x, y, 110) || Math.hypot(x - ship.x, y - ship.y) < 350) continue;
+    if (pts.some(q => Math.hypot(q.x - x, q.y - y) < 520)) continue;
+    pts.push({ x, y, found: save.found.includes(pts.length), ph: r() * TAU });
+  }
+  CHESTS.length = 0; CHESTS.push(...pts);
+}
+function updateChests() {
+  let near = 1e9;
+  for (let i = 0; i < CHESTS.length; i++) {
+    const c = CHESTS[i]; if (c.found) continue;
+    const d = Math.hypot(ship.x - c.x, ship.y - c.y);
+    if (d < 22) { openChest(i); return; }
+    near = Math.min(near, d);
+  }
+  if (near < 200 && !glintToast) { glintToast = true; toast('Something glints beneath the waves.', 3200); Stats.track('treasure/glint', 'Saw a glint'); }
+}
+function openChest(i) {
+  const c = CHESTS[i]; c.found = true;
+  if (!save.found.includes(i)) save.found.push(i);
+  const n = save.found.length, total = CHESTS.length;
+  addLoot(6); Sfx.coin(); splash(c.x, c.y, 12);
+  Stats.track('treasure/chest-' + (i + 1), 'Found chest ' + (i + 1));
+  lastFocus = document.activeElement;
+  panelBody.innerHTML = $('#tpl-chest-' + (n >= total ? 'last' : 'more')).innerHTML;
+  const nEl = $('[data-n]', panelBody), tEl = $('[data-total]', panelBody);
+  if (nEl) nEl.textContent = n; if (tEl) tEl.textContent = total;
+  dialog.setAttribute('aria-label', 'Treasure chest');
+  $('#closePanel').textContent = 'Back to sea';
+  panel.hidden = false; state.docked = 'chest'; autopilot = null;
   for (const k in keys) keys[k] = false;
   $('#closePanel').focus();
 }
@@ -672,13 +912,15 @@ function toggleNight() {
 function start(openId) {
   if (state.started) return;
   state.started = true; Sfx.init();
+  Stats.track(openId ? 'game/skip-sailing' : 'game/set-sail', openId ? 'Skip the sailing' : 'Set sail');
+  spawnNavy(); kraken.timer = 45 + Math.random() * 25;
   document.body.classList.add('playing');
   const intro = $('#intro'); intro.classList.add('leaving');
   setTimeout(() => { intro.hidden = true; }, reduce ? 0 : 600);
   const hint = $('#hint');
   hint.textContent = coarse
-    ? 'Touch the sea to steer. Sail with the wind for speed. Fire sinks barrels and ghosts.'
-    : 'A and D steer, W sails, Space fires. Or click the sea to steer. Watch for ghosts.';
+    ? 'Touch the sea to steer. Sail with the wind. Fire sinks barrels and enemies.'
+    : 'A and D steer, W sails, Space fires. Or click the sea to steer. Not everything out here is friendly.';
   setTimeout(() => hint.classList.add('gone'), 14000);
   if (openId) openPanel(openId);
 }
@@ -716,6 +958,14 @@ addEventListener('pointercancel', () => { pdown = false; });
 $('#start').addEventListener('click', () => start());
 $('#skip').addEventListener('click', () => start('home-port'));
 $('#closePanel').addEventListener('click', closePanel);
+panelBody.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('.buy'); if (b) buyUpgrade(b.dataset.up);
+  const sw = e.target.closest && e.target.closest('.swatch'); if (sw) selectLivery(sw.dataset.livery);
+});
+for (const ev of ['click', 'auxclick']) panelBody.addEventListener(ev, e => {
+  const a = e.target.closest && e.target.closest('a');
+  if (a) Stats.track('click/' + (a.hostname || 'link'), 'Clicked ' + a.href);
+});
 panel.addEventListener('pointerdown', e => { if (e.target === panel) closePanel(); });
 $('#dockBtn').addEventListener('click', interact);
 $('#night').addEventListener('click', toggleNight);
@@ -748,8 +998,22 @@ function updateGhostPtr(camX, camY) {
   ghostPtr.style.transform = `translate(${Math.round(vw / 2 + dx * k)}px, ${Math.round(vh / 2 + dy * k)}px) translate(-50%, -50%)`;
   ghostPtr.firstChild.style.setProperty('--a', Math.atan2(dy, dx) + 'rad');
 }
+function updateNpcPtrs(camX, camY) {
+  const vw = innerWidth, vh = innerHeight, m = 46;
+  for (const n of npcs) {
+    if (!n.ptrEl) continue;
+    const sx = (n.x - camX) * KX, sy = (n.y - camY) * KY;
+    const show = n.alive && n.chasing && (sx < 0 || sx > vw || sy < 0 || sy > vh);
+    n.ptrEl.style.display = show ? '' : 'none';
+    if (!show) continue;
+    const dx = sx - vw / 2, dy = sy - vh / 2;
+    const k = Math.min((vw / 2 - m) / Math.abs(dx || 1e-6), (vh / 2 - m) / Math.abs(dy || 1e-6));
+    n.ptrEl.style.transform = `translate(${Math.round(vw / 2 + dx * k)}px, ${Math.round(vh / 2 + dy * k)}px) translate(-50%, -50%)`;
+    n.ptrEl.firstChild.style.setProperty('--a', Math.atan2(dy, dx) + 'rad');
+  }
+}
 function updateLabels(camX, camY) {
-  updateGhostPtr(camX, camY);
+  updateGhostPtr(camX, camY); updateNpcPtrs(camX, camY);
   const vw = innerWidth, vh = innerHeight, m = 46;
   for (const isl of ISLANDS) {
     const sx = (isl.x - camX) * KX, sy = (isl.y - camY) * KY;
@@ -774,10 +1038,15 @@ function updateLabels(camX, camY) {
 /* =========================================================
    ghost ship + hull
    ========================================================= */
-const HULL_MAX = 5;
+let HULL_MAX = 5;
 const ghost = { alive: false, x: 0, y: 0, heading: 0, speed: 0, hp: 3, cd: 2, timer: 18, flash: 0, orbit: 1, chasing: false };
 let hull = HULL_MAX, invuln = 0, hullTimer = 0, ghostWarned = false, hitToast = false, speedTick = -1;
 const hullEl = $('#hull');
+function setHullMax(n) {
+  HULL_MAX = n;
+  while (hullEl.children.length < n) hullEl.appendChild(document.createElement('i'));
+  drawHullHud();
+}
 function drawHullHud() {
   [...hullEl.children].forEach((el, i) => el.classList.toggle('off', i >= hull));
   hullEl.setAttribute('aria-label', 'Hull ' + hull + ' of ' + HULL_MAX);
@@ -800,13 +1069,13 @@ function hurt(msg) {
   if (!hitToast) { hitToast = true; toast(msg || 'Hit! Reach a harbor to repair.', 3200); }
 }
 function sinkPlayer() {
-  splash(ship.x, ship.y, 14); Sfx.sink();
+  splash(ship.x, ship.y, 14); Sfx.sink(); Stats.track('game/player-sunk', 'Player ship sunk');
   toast('You went down. Waking up at Home Port.', 3400);
   const hp = byId['home-port'];
   ship.x = hp.x + Math.round(landR(hp, 0) * 0.9) + 76; ship.y = hp.y; ship.heading = 0; ship.speed = 0;
   hull = HULL_MAX; invuln = 2.5; autopilot = null; drawHullHud();
   cam.x = ship.x - W / 2; cam.y = ship.y - H / 2;
-  ghost.alive = false; ghost.timer = 25;
+  ghost.alive = false; ghost.timer = 25; respawnHostiles();
 }
 function hitGhost() {
   ghost.hp--; ghost.flash = 0.25; Sfx.thud();
@@ -814,11 +1083,11 @@ function hitGhost() {
   if (ghost.hp > 0) return;
   ghost.alive = false; ghost.timer = 25; Sfx.sink(); splash(ghost.x, ghost.y, 16);
   for (let i = 0; i < 12; i++) { const a = Math.random() * TAU, sp = 10 + Math.random() * 35; addPart(ghost.x, ghost.y, Math.cos(a) * sp, Math.sin(a) * sp, 1.1, i % 3 ? '#5d8780' : '#7dffb0', 2, 2); }
-  addLoot(3); toast("Ghost ship sunk. +3 barrels. It won't stay down.", 3400);
+  addLoot(3); toast("Ghost ship sunk. +3 barrels. It won't stay down.", 3400); Stats.track('game/ghost-sunk', 'Ghost ship sunk');
 }
 function fireGhost(a) {
   const gx = Math.cos(a), gy = Math.sin(a);
-  balls.push({ x: ghost.x + gx * 8, y: ghost.y + gy * 8, vx: gx * 105, vy: gy * 105, t: 0, life: 1.25, enemy: true });
+  balls.push({ x: ghost.x + gx * 8, y: ghost.y + gy * 8, vx: gx * 130, vy: gy * 130, t: 0, life: 1.25, enemy: true });
   for (let i = 0; i < 4; i++) addPart(ghost.x + gx * 8, ghost.y + gy * 8, gx * (10 + i * 5) + (Math.random() - 0.5) * 8, gy * (10 + i * 5) + (Math.random() - 0.5) * 8, 0.5, i < 1 ? '#7dffb0' : '#cfe8df', 2, 2);
   Sfx.cannon(0.55);
 }
@@ -833,7 +1102,7 @@ function updateGhost(dt) {
   const chase = state.started && !state.near && dist < 320;    // harbors are safe
   let want, spd;
   if (chase) {
-    want = dist < 120 ? toP + ghost.orbit * 1.15 : toP; spd = dist < 120 ? 34 : 46;
+    want = dist < 120 ? toP + ghost.orbit * 1.15 : toP; spd = dist < 120 ? 42 : 58;
     if (!ghostWarned) { ghostWarned = true; toast('A ghost ship has spotted you. Harbors are safe.', 3600); Sfx.eerie(); }
   } else if (state.near && dist < 380) { want = toP + Math.PI; spd = 40; }
   else { want = ghost.heading + Math.sin(state.t * 0.3 + ghost.orbit) * 0.6; spd = 16; }
@@ -856,7 +1125,7 @@ function updateGhost(dt) {
   if (chase && dist < 150 && ghost.cd <= 0) {
     for (const side of [-1, 1]) {
       if (Math.abs(angDiff(ghost.heading + side * Math.PI / 2, toP)) < 0.5) {
-        const lead = dist / 105;                                   // aim where the player will be
+        const lead = dist / 130;                                   // aim where the player will be
         const aim = Math.atan2(ship.y + Math.sin(ship.heading) * ship.speed * lead - ghost.y, ship.x + Math.cos(ship.heading) * ship.speed * lead - ghost.x);
         fireGhost(aim + (Math.random() - 0.5) * 0.2); ghost.cd = 3.2; break;
       }
@@ -869,14 +1138,228 @@ function updateGhost(dt) {
   if (ghost.speed > 8 && Math.random() < dt * 14) addPart(ghost.x - fx * 11, ghost.y - fy * 11, 0, 0, 0.8, '#9ff0cf', 2, 1);
 }
 
+/* =========================================================
+   navy, merchants, kraken
+   ========================================================= */
+const npcs = [];
+let navyWarned = false, merchantToast = false;
+
+function seaPoint(minFromShip, pad) {
+  for (let tries = 0; tries < 80; tries++) {
+    const x = 110 + Math.random() * (WORLD_W - 220), y = 110 + Math.random() * (WORLD_H - 220);
+    if (insideLand(x, y, pad) || Math.hypot(x - ship.x, y - ship.y) < minFromShip) continue;
+    return { x, y };
+  }
+  return { x: WORLD_W / 2, y: WORLD_H / 2 };
+}
+function makePtr(text, cls) {
+  const p = document.createElement('div'); p.className = 'ptr ' + cls; p.style.display = 'none';
+  p.innerHTML = '<span class="arr"></span><span class="nm"></span>'; p.lastChild.textContent = text;
+  labelsEl.appendChild(p); return p;
+}
+function spawnNpc(n) {
+  const p = seaPoint(n.kind === 'navy' ? 380 : 200, 80);
+  n.x = p.x; n.y = p.y; n.heading = Math.random() * TAU; n.speed = 0; n.alive = true;
+  n.maxHp = n.hp = n.kind === 'navy' ? 4 : 3; n.flash = 0; n.chasing = false; n.flee = 0; n.wp = null; n.dwell = 0;
+  n.cd = 3; n.orbit = Math.random() < 0.5 ? -1 : 1;
+}
+function initNpcs() {
+  for (let i = 0; i < 2; i++) npcs.push({ kind: 'navy', alive: false, timer: 0, ptrEl: makePtr('Navy', 'navy') });
+  for (let i = 0; i < 3; i++) { const n = { kind: 'merchant', alive: false, timer: 0 }; npcs.push(n); spawnNpc(n); }
+}
+function spawnNavy() { for (const n of npcs) if (n.kind === 'navy') spawnNpc(n); }
+
+// steer around islands instead of scraping along them
+function steerAvoid(n, want) {
+  for (const isl of ISLANDS) {
+    const dx = n.x - isl.x, dy = n.y - isl.y, d = Math.hypot(dx, dy) || 1;
+    const R = landR(isl, Math.atan2(dy, dx)) + 60;
+    if (d >= R) continue;
+    const away = Math.atan2(dy, dx), t1 = away + Math.PI / 2, t2 = away - Math.PI / 2;
+    const tang = Math.abs(angDiff(want, t1)) < Math.abs(angDiff(want, t2)) ? t1 : t2;
+    const k = clamp((R - d) / 40, 0, 1);
+    const vx = Math.cos(want) * (1 - k) + (Math.cos(tang) * 0.6 + Math.cos(away) * 0.4) * k;
+    const vy = Math.sin(want) * (1 - k) + (Math.sin(tang) * 0.6 + Math.sin(away) * 0.4) * k;
+    want = Math.atan2(vy, vx);
+  }
+  return want;
+}
+function npcSteer(n, want, spd, dt, turn) {
+  want = steerAvoid(n, want);
+  n.heading += clamp(angDiff(n.heading, want), -1, 1) * turn * dt;
+  n.speed += (spd - n.speed) * Math.min(1, dt * 1.5);
+  n.x += Math.cos(n.heading) * n.speed * dt; n.y += Math.sin(n.heading) * n.speed * dt;
+  const M = 70;
+  if (n.x < M || n.x > WORLD_W - M || n.y < M || n.y > WORLD_H - M) {
+    n.x = clamp(n.x, M, WORLD_W - M); n.y = clamp(n.y, M, WORLD_H - M);
+    n.heading += clamp(angDiff(n.heading, Math.atan2(WORLD_H / 2 - n.y, WORLD_W / 2 - n.x)), -1, 1) * 3 * dt;
+  }
+  for (const isl of ISLANDS) {
+    const ix = n.x - isl.x, iy = n.y - isl.y, d = Math.hypot(ix, iy) || 1, R = landR(isl, Math.atan2(iy, ix)) + 10;
+    if (d < R) { n.x = isl.x + ix / d * R; n.y = isl.y + iy / d * R; }
+  }
+}
+
+function hitNpc(n) {
+  n.hp--; n.flash = 0.25; Sfx.thud();
+  for (let i = 0; i < 6; i++) addPart(n.x, n.y, (Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40, 0.5, i % 2 ? (n.kind === 'navy' ? '#ff9a3c' : '#ffd25a') : '#efe3c2', 2, 2);
+  if (n.kind === 'merchant') {
+    n.flee = 9; state.wanted = 25;
+    if (!merchantToast) { merchantToast = true; toast('You attacked a merchant. The navy is coming.', 3600); Sfx.horn(); }
+  }
+  if (n.hp > 0) return;
+  n.alive = false; n.timer = n.kind === 'navy' ? 40 : 30; Sfx.sink(); splash(n.x, n.y, 16);
+  for (let i = 0; i < 12; i++) { const a = Math.random() * TAU, sp = 10 + Math.random() * 35; addPart(n.x, n.y, Math.cos(a) * sp, Math.sin(a) * sp, 1.1, i % 3 ? '#8a5a2b' : '#efe3c2', 2, 2); }
+  const loot = n.kind === 'navy' ? 5 : 4;
+  addLoot(loot); toast((n.kind === 'navy' ? 'Navy ship' : 'Merchant') + ' sunk. +' + loot + ' barrels.', 3000);
+  Stats.track(n.kind === 'navy' ? 'game/navy-sunk' : 'game/merchant-sunk', n.kind === 'navy' ? 'Navy ship sunk' : 'Merchant sunk');
+}
+
+function updateMerchant(n, dt) {
+  if (n.flee > 0) { n.flee -= dt; npcSteer(n, Math.atan2(n.y - ship.y, n.x - ship.x), 46, dt, 1.8); return; }
+  if (!n.wp) {
+    const isl = ISLANDS[Math.floor(Math.random() * ISLANDS.length)], a = Math.random() * TAU;
+    n.wp = { x: isl.x + Math.cos(a) * (landR(isl, a) + 72), y: isl.y + Math.sin(a) * (landR(isl, a) + 72) };
+  }
+  if (n.dwell > 0) { n.dwell -= dt; npcSteer(n, n.heading, 0, dt, 0.5); if (n.dwell <= 0) n.wp = null; return; }
+  const dx = n.wp.x - n.x, dy = n.wp.y - n.y;
+  if (Math.hypot(dx, dy) < 24) { n.dwell = 4 + Math.random() * 3; return; }
+  npcSteer(n, Math.atan2(dy, dx), 28, dt, 1.3);
+}
+
+function fireNavy(n, aim) {
+  const gx = Math.cos(aim), gy = Math.sin(aim);
+  balls.push({ x: n.x + gx * 8, y: n.y + gy * 8, vx: gx * 130, vy: gy * 130, t: 0, life: 1.25, enemy: true, tint: '#ff9a3c' });
+  for (let i = 0; i < 4; i++) addPart(n.x + gx * 8, n.y + gy * 8, gx * (10 + i * 5) + (Math.random() - 0.5) * 8, gy * (10 + i * 5) + (Math.random() - 0.5) * 8, 0.5, i < 1 ? '#ffb347' : '#cfd6d4', 2, 2);
+  Sfx.cannon(0.55);
+}
+function updateNavy(n, dt) {
+  const dx = ship.x - n.x, dy = ship.y - n.y, dist = Math.hypot(dx, dy) || 1, toP = Math.atan2(dy, dx);
+  const range = state.wanted > 0 ? 700 : 280;                  // attacking merchants makes the navy look harder
+  const chase = state.started && !state.near && dist < range;  // harbors are safe
+  n.cd -= dt;
+  let want, spd;
+  if (chase) {
+    want = dist < 130 ? toP + n.orbit * 1.15 : toP; spd = dist < 130 ? 50 : 68;
+    if (!navyWarned) { navyWarned = true; toast('A navy ship has spotted you. Harbors are safe.', 3600); Sfx.horn(); }
+  } else if (state.near && dist < 380) { want = toP + Math.PI; spd = 44; }
+  else {
+    if (!n.wp || Math.hypot(n.wp.x - n.x, n.wp.y - n.y) < 40) n.wp = seaPoint(0, 80);
+    want = Math.atan2(n.wp.y - n.y, n.wp.x - n.x); spd = 36;
+  }
+  n.chasing = chase;
+  npcSteer(n, want, spd, dt, 1.7);
+  if (chase && dist < 160 && n.cd <= 0) {
+    for (const side of [-1, 1]) {
+      if (Math.abs(angDiff(n.heading + side * Math.PI / 2, toP)) < 0.5) {
+        const lead = dist / 130;
+        const aim = Math.atan2(ship.y + Math.sin(ship.heading) * ship.speed * lead - n.y, ship.x + Math.cos(ship.heading) * ship.speed * lead - n.x);
+        fireNavy(n, aim + (Math.random() - 0.5) * 0.24); fireNavy(n, aim + (Math.random() - 0.5) * 0.24);
+        n.cd = 4.2; break;
+      }
+    }
+  }
+  if (dist < 14) {
+    hurt('A navy ship rammed you. Harbors are safe.');
+    n.x -= dx / dist * 4; n.y -= dy / dist * 4; ship.x += dx / dist * 6; ship.y += dy / dist * 6; ship.speed *= 0.6;
+  }
+}
+function updateNpcs(dt) {
+  let anyChase = false;
+  for (const n of npcs) {
+    if (!n.alive) {
+      if (n.kind === 'navy' && !state.started) continue;
+      if (!state.docked) { n.timer -= dt; if (n.timer <= 0) spawnNpc(n); }
+      continue;
+    }
+    if (state.docked) continue;
+    n.flash = Math.max(0, n.flash - dt);
+    if (n.kind === 'merchant') updateMerchant(n, dt);
+    else { updateNavy(n, dt); if (n.chasing) anyChase = true; }
+  }
+  if (!anyChase) navyWarned = false;
+}
+function respawnHostiles() {
+  spawnNavy(); state.wanted = 0;
+  if (kraken.state !== 'idle') { kraken.state = 'idle'; kraken.timer = 40; kraken.slam = null; }
+}
+
+/* ---------- kraken ---------- */
+const kraken = { state: 'idle', t: 0, x: 0, y: 0, hp: 12, timer: 9999, slamCd: 2, slam: null, scale: 0, flash: 0 };
+function startKraken() {
+  for (let tries = 0; tries < 40; tries++) {
+    const a = ship.heading + (Math.random() - 0.5) * (tries < 20 ? 1.6 : TAU), d = 105 + Math.random() * 30;
+    const x = ship.x + Math.cos(a) * d, y = ship.y + Math.sin(a) * d;
+    if (x < 90 || x > WORLD_W - 90 || y < 90 || y > WORLD_H - 90 || insideLand(x, y, 50)) continue;
+    kraken.x = x; kraken.y = y; kraken.state = 'warn'; kraken.t = 0; kraken.scale = 0; kraken.slam = null; kraken.flash = 0;
+    toast('The water is churning.', 2200); Sfx.rumble(); return;
+  }
+  kraken.timer = 8;
+}
+function retreatKraken() { kraken.state = 'down'; kraken.t = 0; kraken.slam = null; }
+function hitKraken() {
+  const k = kraken;
+  k.hp--; k.flash = 0.2; Sfx.thud();
+  for (let i = 0; i < 6; i++) addPart(k.x + (Math.random() - 0.5) * 16, k.y + (Math.random() - 0.5) * 16, (Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40, 0.6, i % 2 ? '#7a4a8e' : '#2a1238', 2, 2);
+  if (k.hp > 0) return;
+  retreatKraken(); Sfx.sink(); splash(k.x, k.y, 20); addLoot(8); Stats.track('game/kraken-driven-off', 'Kraken driven off');
+  toast('The kraken sinks back into the deep. +8 barrels.', 3400);
+}
+function updateKraken(dt) {
+  const k = kraken;
+  if (state.docked) return;
+  if (k.flash > 0) k.flash -= dt;
+  if (k.state === 'idle') {
+    if (state.started && !state.near) { k.timer -= dt; if (k.timer <= 0) startKraken(); }
+    return;
+  }
+  k.t += dt;
+  if (k.state === 'warn') {
+    if (Math.random() < dt * 30) addPart(k.x + (Math.random() - 0.5) * 44, k.y + (Math.random() - 0.5) * 36, 0, -10, 0.8, '#dff3f3', 1, 0.5);
+    if (k.t > 1.8) {
+      k.state = 'up'; k.t = 0; k.hp = 12; k.slamCd = 1.8; k.slam = null; shake = Math.max(shake, 6);
+      splash(k.x, k.y, 18); Sfx.roar(); toast('A kraken rises from the deep.', 3000); Stats.track('game/kraken-appeared', 'Kraken appeared');
+    }
+    return;
+  }
+  if (k.state === 'down') {
+    k.scale = Math.max(0, 1 - k.t / 1.0);
+    if (k.t >= 1) { k.state = 'idle'; k.timer = 50 + Math.random() * 45; k.slam = null; }
+    return;
+  }
+  // up
+  k.scale = Math.min(1, k.t / 1.2);
+  const dx = ship.x - k.x, dy = ship.y - k.y, dist = Math.hypot(dx, dy) || 1;
+  if (k.t > 26 || dist > 420 || state.near) { retreatKraken(); return; }
+  if (k.scale < 1) return;
+  const sp = dist > 60 ? 30 : 8;
+  const nx = k.x + dx / dist * sp * dt, ny = k.y + dy / dist * sp * dt;
+  if (!insideLand(nx, ny, 26)) { k.x = nx; k.y = ny; }
+  k.slamCd -= dt;
+  if (!k.slam && k.slamCd <= 0 && dist < 95) {
+    k.slam = { x: ship.x + Math.cos(ship.heading) * ship.speed * 0.8, y: ship.y + Math.sin(ship.heading) * ship.speed * 0.8, t: 0 };
+    Sfx.rumble();
+  }
+  if (k.slam) {
+    k.slam.t += dt;
+    if (k.slam.t >= 0.9) {
+      splash(k.slam.x, k.slam.y, 14); Sfx.thud(); shake = Math.max(shake, 5);
+      if (Math.hypot(ship.x - k.slam.x, ship.y - k.slam.y) < 18) hurt('The kraken slammed you. Harbors are safe.');
+      k.slam = null; k.slamCd = 2.4;
+    }
+  }
+  if (dist < 22) { hurt('The kraken grabbed you.'); ship.x += dx / dist * 8; ship.y += dy / dist * 8; ship.speed *= 0.5; }
+}
+
 function sailEff() {
   return clamp((0.35 + 0.65 * (1 + Math.cos(ship.heading - wind.ang)) / 2) * wind.g, 0.2, 1);
 }
 
 function update(dt) {
   const t = state.t;
+  updateStorm(dt);
   wind.ang = 0.9 + 0.7 * Math.sin(t * 0.045) + 0.35 * Math.sin(t * 0.11 + 1);
-  wind.g = 0.9 + 0.1 * Math.sin(t * 0.6);
+  wind.g = (0.9 + 0.1 * Math.sin(t * 0.6)) * (1 + 0.85 * storm.level);
   wind.x = Math.cos(wind.ang); wind.y = Math.sin(wind.ang);
 
   let steer = 0, throttle = 0, brake = false;
@@ -887,7 +1370,7 @@ function update(dt) {
     if (autopilot) {
       const dx = autopilot.x - ship.x, dy = autopilot.y - ship.y, dist = Math.hypot(dx, dy);
       if (dist < 16) autopilot = null;
-      else { steer = clamp(angDiff(ship.heading, Math.atan2(dy, dx)) * 3, -1, 1); throttle = clamp(dist / 70, 0.35, 1); }
+      else { steer = clamp(angDiff(ship.heading, Math.atan2(dy, dx)) * 3, -1, 1); throttle = clamp(dist / 90, 0.35, 1); }
     }
   } else if (state.docked) {
     brake = true;
@@ -937,18 +1420,23 @@ function update(dt) {
     const b = balls[i]; b.t += dt; b.x += b.vx * dt; b.y += b.vy * dt;
     let dead = false;
     if (b.enemy) {
-      if (Math.hypot(ship.x - b.x, ship.y - b.y) < 8) { hurt('Hit by the ghost ship. Harbors are safe.'); splash(b.x, b.y, 5); dead = true; }
+      if (Math.hypot(ship.x - b.x, ship.y - b.y) < 8) { hurt('Hit! Harbors are safe.'); splash(b.x, b.y, 5); dead = true; }
     } else {
       for (const br of barrels) if (br.alive && Math.hypot(br.x - b.x, br.y - b.y) < 8) { breakBarrel(br); splash(br.x, br.y, 6); dead = true; break; }
       if (!dead && ghost.alive && Math.hypot(ghost.x - b.x, ghost.y - b.y) < 13) { hitGhost(); dead = true; }
+      if (!dead) for (const n of npcs) if (n.alive && Math.hypot(n.x - b.x, n.y - b.y) < 13) { hitNpc(n); dead = true; break; }
+      if (!dead && kraken.state === 'up' && kraken.scale >= 0.7 && Math.hypot(kraken.x - b.x, kraken.y - b.y) < 20) { hitKraken(); dead = true; }
     }
     if (!dead && insideLand(b.x, b.y)) { for (let k = 0; k < 5; k++) addPart(b.x, b.y, (Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30, 0.5, '#e2cf8f', 2, 3); dead = true; }
     if (!dead && b.t >= b.life) { splash(b.x, b.y); dead = true; }
     if (dead) balls.splice(i, 1);
   }
   updateGhost(dt);
+  updateNpcs(dt); updateKraken(dt);
+  state.wanted = Math.max(0, state.wanted - dt); $('#wanted').hidden = !(state.wanted > 0);
   invuln = Math.max(0, invuln - dt);
   if (hull < HULL_MAX && state.started) { hullTimer += dt; if (hullTimer > 10) { hull++; hullTimer = 7; drawHullHud(); } }
+  if (state.started && !state.docked) updateChests();
   const tick = Math.floor(t * 4);
   if (tick !== speedTick) { speedTick = tick; Sfx.speed(ship.speed / MAX); }
 
@@ -1023,6 +1511,76 @@ function drawShip(camX, camY, t) {
   ctx.restore();
 }
 
+function drawNpcs(camX, camY, t) {
+  for (const n of npcs) {
+    if (!n.alive) continue;
+    const bob = reduce ? 0 : Math.round(Math.sin(t * 1.4 + n.x) * 0.8);
+    const sx = Math.round(n.x - camX), sy = Math.round(n.y - camY) + bob;
+    if (sx < -40 || sx > W + 40 || sy < -40 || sy > H + 40) continue;
+    const spr = n.kind === 'navy' ? navySprite : merchSprite;
+    ctx.save(); ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = 0.3; ctx.translate(sx + 2, sy + 3); ctx.rotate(n.heading); ctx.drawImage(spr.shadow, -17, -11);
+    ctx.restore();
+    ctx.save(); ctx.imageSmoothingEnabled = false;
+    ctx.translate(sx, sy); ctx.rotate(n.heading);
+    ctx.globalAlpha = n.flash > 0 && Math.floor(t * 30) % 2 ? 0.35 : 1;
+    ctx.drawImage(spr.body, -17, -11);
+    ctx.restore();
+    if (n.hp < n.maxHp) { ctx.fillStyle = '#b3261e'; for (let i = 0; i < n.hp; i++) ctx.fillRect(sx - 6 + i * 4, sy - 19, 3, 2); }
+  }
+}
+
+function drawKraken(camX, camY, t) {
+  const k = kraken;
+  if (k.state === 'idle') return;
+  const x = Math.round(k.x - camX), y = Math.round(k.y - camY);
+  if (x < -70 || x > W + 70 || y < -70 || y > H + 70) return;
+  if (k.state === 'warn') {                                   // whirlpool: the only warning you get
+    const r = 30 - (k.t / 1.8) * 14;
+    ctx.globalAlpha = 0.4; disc(ctx, x, y, Math.max(2, Math.round(r * 0.7)), '#06202d'); ctx.globalAlpha = 1;
+    for (let i = 0; i < 16; i++) {
+      const a = i * TAU / 16 + t * 4, rr = r + Math.sin(i + t * 6) * 2;
+      ctx.fillStyle = i % 2 ? '#0c2a3a' : '#dff3f3';
+      ctx.fillRect(Math.round(x + Math.cos(a) * rr), Math.round(y + Math.sin(a) * rr * 0.8), 2, 2);
+    }
+    return;
+  }
+  const s = k.scale;
+  if (k.slam) {                                               // slam telegraph: dodge the ring
+    const sx = Math.round(k.slam.x - camX), sy = Math.round(k.slam.y - camY);
+    const pulse = Math.floor(t * 12) % 2;
+    ctx.fillStyle = pulse ? '#ff4d3a' : '#ffb1a6';
+    for (let i = 0; i < 14; i++) { const a = i * TAU / 14 + t * 2; ctx.fillRect(Math.round(sx + Math.cos(a) * 17), Math.round(sy + Math.sin(a) * 17), 2, 2); }
+    ctx.fillStyle = 'rgba(255,77,58,.5)';
+    for (let i = 1; i < 8; i++) ctx.fillRect(Math.round(x + (sx - x) * i / 8), Math.round(y + (sy - y) * i / 8), 2, 2);
+  }
+  ctx.globalAlpha = 0.3; disc(ctx, x + 3, y + 5, Math.max(1, Math.round(19 * s)), '#000'); ctx.globalAlpha = 1;
+  for (let i = 0; i < 20; i++) {                              // foam ring
+    const a = i * TAU / 20 + t * 0.6, rr = (24 + Math.sin(t * 3 + i) * 1.5) * s;
+    ctx.fillStyle = '#e6f6f4'; ctx.fillRect(Math.round(x + Math.cos(a) * rr), Math.round(y + Math.sin(a) * rr), 2, 1);
+  }
+  const N = 7;
+  for (let i = 0; i < N; i++) {                               // tentacles
+    const base = i * TAU / N + t * 0.25;
+    let px = x, py = y;
+    for (let j = 1; j <= 10; j++) {
+      const frac = j / 10, a = base + Math.sin(t * 2.2 + i * 1.7 + j * 0.5) * 0.55 * frac;
+      px += Math.cos(a) * 4.4 * s; py += Math.sin(a) * 4.4 * s;
+      const r = Math.max(1, Math.round((5.6 - 3.8 * frac) * s));
+      disc(ctx, px, py, r, j % 2 ? '#4a2a5c' : '#583368');
+      if (j % 3 === 0 && r > 1) { ctx.fillStyle = '#b58ac9'; ctx.fillRect(Math.round(px), Math.round(py), 1, 1); }
+    }
+  }
+  disc(ctx, x, y, Math.max(1, Math.round(15 * s)), '#3b1f4a');
+  disc(ctx, x, y, Math.max(1, Math.round(13 * s)), '#5a2f6e');
+  disc(ctx, x - 2, y - 3, Math.max(1, Math.round(7 * s)), '#6d3d84');
+  if (s > 0.6) {
+    for (const ex of [-5, 5]) { disc(ctx, x + ex, y - 2, 3, '#ffd25a'); ctx.fillStyle = '#2a0d0d'; ctx.fillRect(x + ex, y - 3, 1, 3); }
+  }
+  if (k.flash > 0 && Math.floor(t * 30) % 2) { ctx.globalAlpha = 0.5; disc(ctx, x, y, Math.round(15 * s), '#ffffff'); ctx.globalAlpha = 1; }
+  if (k.state === 'up' && k.hp < 12) { ctx.fillStyle = '#b3261e'; for (let i = 0; i < k.hp; i++) ctx.fillRect(x - 12 + i * 2, y - 24, 1, 2); }
+}
+
 function drawGhost(camX, camY, t) {
   if (!ghost.alive) return;
   const bob = reduce ? 0 : Math.round(Math.sin(t * 1.3 + 2) * 0.8);
@@ -1050,6 +1608,23 @@ function drawBarrels(camX, camY, t) {
   }
 }
 
+function drawChests(camX, camY, t) {
+  for (const c of CHESTS) {
+    if (c.found) continue;
+    const d = Math.hypot(ship.x - c.x, ship.y - c.y); if (d > 240) continue;
+    const k = 1 - d / 240, x = Math.round(c.x - camX), y = Math.round(c.y - camY);
+    for (let i = 0; i < 5; i++) {
+      if (Math.sin(t * 3 + i * 2 + c.ph) < 0.2) continue;
+      const a = t * 0.7 + i * 1.256 + c.ph, rr = 5 + (i % 3) * 5;
+      const px = x + Math.round(Math.cos(a) * rr), py = y + Math.round(Math.sin(a) * rr * 0.6);
+      ctx.globalAlpha = 0.25 + 0.6 * k; ctx.fillStyle = i % 2 ? '#ffe9a6' : '#fff6d6';
+      ctx.fillRect(px, py, 1, 1);
+      if (i % 2) { ctx.fillRect(px - 1, py, 3, 1); ctx.fillRect(px, py - 1, 1, 3); }
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
 function drawParts(camX, camY) {
   for (const p of parts) {
     ctx.globalAlpha = clamp(p.life / p.max, 0, 1); ctx.fillStyle = p.c;
@@ -1063,8 +1638,8 @@ function drawBalls(camX, camY) {
     const x = Math.round(b.x - camX), y = Math.round(b.y - camY);
     const z = Math.sin(Math.PI * b.t / b.life) * 10;
     ctx.fillStyle = 'rgba(0,20,30,.35)'; ctx.fillRect(x, y, 2, 2);
-    ctx.fillStyle = b.enemy ? '#0f2a20' : '#15151a'; ctx.fillRect(x, Math.round(y - z), 2, 2);
-    ctx.fillStyle = b.enemy ? '#7dffb0' : '#6b6f78'; ctx.fillRect(x, Math.round(y - z), 1, 1);
+    ctx.fillStyle = b.enemy ? '#12100e' : '#15151a'; ctx.fillRect(x, Math.round(y - z), 2, 2);
+    ctx.fillStyle = b.enemy ? (b.tint || '#7dffb0') : '#6b6f78'; ctx.fillRect(x, Math.round(y - z), 1, 1);
   }
 }
 
@@ -1116,6 +1691,8 @@ function drawNight(camX, camY, t) {
   const fx = Math.cos(ship.heading), fy = Math.sin(ship.heading);
   glow(ship.x + fx * 12 - camX, ship.y + fy * 12 - camY, 52, '255,196,110', 0.5 * n);
   if (ghost.alive) glow(ghost.x - camX, ghost.y - camY, 42, '110,255,190', 0.35 * n);
+  for (const q of npcs) if (q.alive) glow(q.x - camX, q.y - camY, 26, q.kind === 'navy' ? '190,215,255' : '255,200,110', 0.32 * n);
+  if (kraken.state === 'up') glow(kraken.x - camX, kraken.y - camY, 50, '170,90,255', 0.3 * n * kraken.scale);
   for (const isl of ISLANDS) for (const l of isl.lights) {
     const flick = reduce ? 1 : 0.9 + 0.1 * Math.sin(t * 7 + l.x);
     glow(l.x - camX, l.y - camY, l.r, l.rgb, l.a * n * flick);
@@ -1138,6 +1715,22 @@ function drawFog() {
   ctx.fillStyle = `rgba(6,16,20,${((150 - edge) / 150 * 0.72).toFixed(3)})`;
   ctx.fillRect(0, 0, W, H);
 }
+function drawStorm() {
+  if (storm.level <= 0.01 && storm.flash <= 0.01) return;
+  if (storm.level > 0.01) {
+    ctx.fillStyle = `rgba(12,20,28,${(0.38 * storm.level).toFixed(3)})`;
+    ctx.fillRect(0, 0, W, H);
+    const dx = Math.cos(RAIN_ANG), dy = Math.sin(RAIN_ANG);
+    ctx.strokeStyle = `rgba(205,228,236,${(0.4 * storm.level).toFixed(3)})`; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const r of RAIN) {
+      const x = r.x % W, y = r.y % H;
+      ctx.moveTo(x, y); ctx.lineTo(x - dx * r.l, y - dy * r.l);
+    }
+    ctx.stroke();
+  }
+  if (storm.flash > 0.01) { ctx.fillStyle = `rgba(230,238,255,${(0.5 * storm.flash).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+}
 
 const mini = $('#mini'), mctx = mini.getContext('2d');
 function drawMini() {
@@ -1150,6 +1743,8 @@ function drawMini() {
   mctx.fillStyle = '#b07a3d';
   for (const b of barrels) if (b.alive) mctx.fillRect(Math.round(b.x * s), Math.round(b.y * s), 1, 1);
   if (ghost.alive) { mctx.fillStyle = '#7dffb0'; mctx.fillRect(Math.round(ghost.x * s) - 1, Math.round(ghost.y * s) - 1, 3, 3); }
+  for (const q of npcs) if (q.alive) { mctx.fillStyle = q.kind === 'navy' ? '#ff5a4a' : '#ffd25a'; mctx.fillRect(Math.round(q.x * s) - 1, Math.round(q.y * s) - 1, 2, 2); }
+  if (kraken.state === 'up' || kraken.state === 'warn') { mctx.fillStyle = '#b06cff'; mctx.fillRect(Math.round(kraken.x * s) - 2, Math.round(kraken.y * s) - 2, 4, 4); }
   mctx.strokeStyle = 'rgba(223,233,228,.5)'; mctx.lineWidth = 1;
   mctx.strokeRect(Math.round(cam.x * s) + 0.5, Math.round(cam.y * s) + 0.5, Math.round(W * s), Math.round(H * s));
   mctx.fillStyle = '#fff'; mctx.fillRect(Math.round(ship.x * s) - 1, Math.round(ship.y * s) - 1, 3, 3);
@@ -1164,14 +1759,18 @@ function render() {
   ctx.drawImage(land, -camX, -camY);
   drawCloudShadows(camX, camY, t);
   drawBarrels(camX, camY, t);
+  drawChests(camX, camY, t);
   drawParts(camX, camY);
   drawTarget(camX, camY, t);
+  drawNpcs(camX, camY, t);
   drawGhost(camX, camY, t);
   drawShip(camX, camY, t);
+  drawKraken(camX, camY, t);
   drawBalls(camX, camY);
   drawClouds(camX, camY, t);
   drawNight(camX, camY, t);
   drawFog();
+  drawStorm();
   updateLabels(camX, camY);
   drawMini();
 }
@@ -1181,8 +1780,11 @@ function render() {
    ========================================================= */
 function init() {
   buildLand();
-  shipSprite = makeShip(PAL_PLAYER); ghostSprite = makeShip(PAL_GHOST); drawHullHud();
+  loadSave(); $('#loot').textContent = state.loot;
+  applyLivery(); ghostSprite = makeShip(PAL_GHOST); navySprite = makeShip(PAL_NAVY); merchSprite = makeShip(PAL_MERCH); drawHullHud();
+  applyUpgrades(); placeChests();
   for (let i = 0; i < 16; i++) barrels.push(spawnBarrel());
+  initNpcs();
   resize();
   cam.x = ship.x - W / 2; cam.y = ship.y - H / 2;
   let last = performance.now();
@@ -1193,9 +1795,10 @@ function init() {
   }
   requestAnimationFrame(frame);
   $('#start').focus();
-  window.__game = { state, ship, cam, ISLANDS, barrels, fire, start, openPanel, toggleNight, keys, ghost, spawnGhost, hurt, hitGhost, get hull() { return hull; }, get W() { return W; }, get H() { return H; } };
+  window.__game = { state, ship, cam, ISLANDS, barrels, fire, start, openPanel, toggleNight, keys, ghost, spawnGhost, hurt, hitGhost, npcs, kraken, startKraken, hitKraken, hitNpc, CHESTS, up, UPGRADES, buyUpgrade, addLoot, storm, LIVERIES, cosmetics, selectLivery, wind, get MAX() { return MAX; }, get HULL_MAX() { return HULL_MAX; }, get gunCd() { return gunCd; }, get hull() { return hull; }, get W() { return W; }, get H() { return H; } };
 }
 
+Stats.init();
 const ready = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]) : Promise.resolve();
 ready.then(init);
 })();
