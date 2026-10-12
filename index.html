@@ -3,742 +3,721 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>megawan · Gua Bajak Laut</title>
-<meta name="description" content="Sepuluh awak bajak laut di sebuah gua. Setiap awak adalah satu repo; yang paling banyak commit memegang pangkat tertinggi.">
-<meta name="theme-color" content="#0d0c1e">
+<title>megawan · Pulau Bajak Laut</title>
+<meta name="description" content="Pulau bajak laut bergaya pixel ala Stardew Valley. Kapten dan kru kapal punya tugas masing-masing; klik untuk berkenalan.">
+<meta name="theme-color" content="#8accf6">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
   :root {
-    --night: #0d0c1e;
-    --rock: #1d1a3e;
-    --wood: #3d1f0c;
-    --wood-lt: #5a2f14;
-    --parchment: #f0dfb0;
-    --parchment-dk: #d6c08a;
-    --ink: #2a1c10;
-    --red: #c8372d;
+    --ink: #3b2412;
+    --paper: #fbf0cc;
+    --paper-dk: #ecd9a0;
+    --sand: #f1d78e;
+    --wood: #8a5a2b;
+    --wood-lt: #b27a3e;
+    --wood-dk: #5a2f14;
     --gold: #f2b632;
-    --foam: #e6f1f0;
+    --red: #c8372d;
+    --sea: #2f86c8;
+    --grass: #5aa833;
     --px: "Press Start 2P", "Courier New", monospace;
     --body: "VT323", "Courier New", monospace;
   }
   *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
-    margin: 0; background: var(--night); color: var(--foam);
-    font-family: var(--body); font-size: 22px; line-height: 1.25;
+    margin: 0; color: var(--ink);
+    font-family: var(--body); font-size: 23px; line-height: 1.25;
+    background-color: var(--sand);
+    background-image:
+      linear-gradient(45deg, rgba(120,80,20,.07) 25%, transparent 25%, transparent 75%, rgba(120,80,20,.07) 75%),
+      linear-gradient(45deg, rgba(120,80,20,.07) 25%, transparent 25%, transparent 75%, rgba(120,80,20,.07) 75%);
+    background-size: 16px 16px; background-position: 0 0, 8px 8px;
   }
-  a { color: var(--gold); }
-  :focus-visible { outline: 4px solid var(--gold); outline-offset: 2px; }
-  canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+  a { color: var(--wood-dk); }
+  :focus-visible { outline: 4px solid var(--red); outline-offset: 3px; }
+  canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+  h1, h2, h3, p { margin: 0; }
 
-  header { text-align: center; padding: 32px 16px 28px; }
-    h1 { font-family: var(--px); font-size: clamp(16px, 4.2vw, 36px); line-height: 1.4; margin: 0; color: var(--parchment); text-shadow: 4px 4px 0 #000; }
-  h1 span { color: var(--red); }
-  
-  /* ---------- the cave ---------- */
-  .stage { max-width: 1180px; margin: 0 auto; padding: 0 12px; }
-  .cave {
-    position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000;
-    box-shadow: 0 0 0 4px var(--wood-lt), 0 0 0 8px var(--wood), 8px 8px 0 8px #000;
+  /* chunky pixel border: notched corners, no radius */
+  .px {
+    background: var(--paper);
+    box-shadow:
+      0 -4px 0 0 var(--ink), 0 4px 0 0 var(--ink), -4px 0 0 0 var(--ink), 4px 0 0 0 var(--ink),
+      inset -4px -4px 0 0 rgba(90,47,20,.18), inset 4px 4px 0 0 rgba(255,255,255,.5);
   }
-  #cave { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .tag {
-    position: absolute; transform: translate(-50%, -50%); z-index: 2;
-    width: 7%; height: 16%; padding: 0; border: 0; background: transparent; cursor: pointer;
+  .wood {
+    background: var(--wood);
+    color: #fff3d0;
+    box-shadow:
+      0 -4px 0 0 var(--ink), 0 4px 0 0 var(--ink), -4px 0 0 0 var(--ink), 4px 0 0 0 var(--ink),
+      inset 0 -6px 0 0 var(--wood-dk), inset 0 4px 0 0 var(--wood-lt);
   }
-  .tag:focus-visible { outline: 3px solid var(--gold); outline-offset: 0; }
 
-  .card {
-    position: absolute; z-index: 3; width: min(280px, 70%); padding: 14px;
-    background: var(--parchment); color: var(--ink);
-    box-shadow: 0 0 0 4px var(--wood), 6px 6px 0 4px #000;
-    font-size: 21px;
-  }
-  .card[hidden] { display: none; }
-  .card .r { font-family: var(--px); font-size: 8px; color: var(--red); margin: 0 0 8px; }
-  .card h2 { font-family: var(--px); font-size: 11px; line-height: 1.6; margin: 0 0 6px; word-break: break-word; }
-  .card p { margin: 0 0 6px; }
-  .card .c { font-family: var(--px); font-size: 9px; }
-  .card a { color: var(--red); }
+  .wrap { width: min(100% - 40px, 1000px); margin-inline: auto; }
 
-  
-  /* ---------- roster ---------- */
-  section { max-width: 1180px; margin: 0 auto; padding: 48px 16px 24px; }
-  h2.sec { font-family: var(--px); font-size: clamp(13px, 2.6vw, 18px); color: var(--parchment); margin: 0 0 8px; }
-  .sec + * { margin-top: 28px; }
-  .roster { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
-  .row {
-    position: relative; display: grid; grid-template-columns: 72px 1fr; gap: 4px 14px; align-items: start;
-    background: var(--parchment); color: var(--ink); padding: 20px 14px 14px;
-    box-shadow: 0 0 0 4px var(--wood), 4px 4px 0 4px #000;
-  }
-  .row .rk {
-    position: absolute; top: -13px; left: 10px; padding: 6px 8px;
-    font-family: var(--px); font-size: 9px; color: var(--parchment); background: var(--wood); box-shadow: 0 0 0 3px var(--wood-lt);
-  }
-  .row:first-child .rk { background: var(--red); box-shadow: 0 0 0 3px #7e1e17; }
-  .row canvas { width: 72px; height: 84px; }
-  .row h3 { font-family: var(--px); font-size: 10px; line-height: 1.6; margin: 2px 0 0; word-break: break-word; }
-  .row h3 a { color: var(--ink); }
-  .row h3 a:hover { color: var(--red); }
-  .row .job { margin: 2px 0 0; font-size: 21px; }
-  .row .meta { grid-column: 1 / -1; margin-top: 6px; }
-  .bar { display: grid; grid-template-columns: repeat(20, 1fr); gap: 2px; height: 12px; }
-  .bar i { background: #bfa96f; }
-  .bar i.on { background: var(--red); }
-  .row:first-child .bar i.on { background: var(--gold); box-shadow: inset 0 -3px 0 #a87a10; }
-  .count { font-family: var(--px); font-size: 9px; margin-top: 8px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  /* ===== header sign ===== */
+  header { padding: 36px 0 28px; text-align: center; }
+  .sign { display: inline-block; padding: 22px 30px 20px; position: relative; max-width: 100%; }
+  .sign::before, .sign::after { content: ""; position: absolute; top: 10px; width: 8px; height: 8px; background: #2a1c10; }
+  .sign::before { left: 10px; } .sign::after { right: 10px; }
+  h1 { font-family: var(--px); font-size: clamp(18px, 5vw, 38px); line-height: 1.3; letter-spacing: 1px; text-shadow: 3px 3px 0 var(--ink); color: var(--gold); }
+  .sign p { font-size: 24px; margin-top: 10px; color: #ffe9b0; }
 
-  .harbor { border-top: 8px solid var(--wood); margin-top: 32px; max-width: none; background: #07121a; }
-  .harbor > div { max-width: 1180px; margin: 0 auto; }
-  .ports { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-  .port a {
-    display: block; padding: 18px; text-decoration: none; color: var(--foam);
-    background: #10303f; box-shadow: 0 0 0 4px #1f5a73, 4px 4px 0 4px #000;
+  /* ===== stage ===== */
+  .stage-wrap { margin: 0 auto; }
+  .frame { padding: 10px; margin: 0 auto; width: fit-content; max-width: 100%; }
+  #scene { cursor: default; width: 100%; height: auto; background: #8accf6; }
+  #scene.hit { cursor: pointer; }
+
+  .dialog { display: flex; gap: 18px; align-items: stretch; margin: 28px auto 0; padding: 14px 16px; min-height: 148px; }
+  .dialog .face { flex: none; width: 96px; height: 104px; background: #bfe6fb; box-shadow: 0 0 0 4px var(--ink); align-self: center; }
+  .dialog .face canvas { width: 100%; height: 100%; }
+  .dialog .rank { font-family: var(--px); font-size: 10px; line-height: 1.5; color: var(--red); }
+  .dialog .who { font-family: var(--px); font-size: clamp(13px, 2.4vw, 17px); line-height: 1.5; margin: 6px 0 8px; }
+  .dialog .say { min-height: 3.75em; }
+  .dialog .go { display: inline-block; margin-top: 8px; font-family: var(--px); font-size: 10px; text-decoration: none; padding: 9px 12px; background: var(--gold); color: var(--ink); box-shadow: 0 0 0 3px var(--ink); }
+  .dialog .go:hover { background: #ffd35c; }
+  .dialog .go[hidden] { display: none; }
+
+  /* ===== sections ===== */
+  section.block { margin-top: 56px; }
+  h2.sec { font-family: var(--px); font-size: clamp(14px, 3vw, 20px); line-height: 1.4; margin-bottom: 22px; text-align: center; }
+  h2.sec span { display: inline-block; padding: 10px 16px; }
+
+  .roster { list-style: none; margin: 0; padding: 4px; display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+  .roster button {
+    width: 100%; height: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; border: 0;
+    display: grid; grid-template-columns: 72px 1fr; gap: 12px; align-items: center; padding: 12px;
+    background: var(--paper);
+    box-shadow:
+      0 -4px 0 0 var(--ink), 0 4px 0 0 var(--ink), -4px 0 0 0 var(--ink), 4px 0 0 0 var(--ink),
+      inset -4px -4px 0 0 rgba(90,47,20,.18), inset 4px 4px 0 0 rgba(255,255,255,.5);
+    transition: transform .08s steps(2);
   }
-  .port a:hover { background: #164559; }
-  .port b { display: block; font-family: var(--px); font-size: 11px; line-height: 1.6; color: var(--gold); font-weight: normal; margin-bottom: 6px; }
-  footer { padding: 24px 16px 40px; text-align: center; background: #07121a; font-size: 20px; }
-  footer p { margin: 4px 0; opacity: .8; }
+  .roster button:hover { transform: translateY(-4px); background: #fff7dc; }
+  .roster button[aria-pressed="true"] { background: #ffe9a0; outline: 4px solid var(--red); outline-offset: 0; }
+  .roster canvas { width: 72px; height: 78px; background: #bfe6fb; }
+  .roster .r { display: block; font-family: var(--px); font-size: 8px; line-height: 1.6; color: var(--red); }
+  .roster .n { display: block; font-size: 25px; line-height: 1.05; margin: 3px 0; }
+  .roster .j { display: block; font-size: 19px; line-height: 1.1; opacity: .85; }
+
+  .ports { list-style: none; margin: 0; padding: 4px; display: grid; gap: 26px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .ports a {
+    display: block; height: 100%; text-decoration: none; padding: 18px 18px 16px; position: relative;
+    transition: transform .08s steps(2);
+  }
+  .ports a:hover { transform: translateY(-4px); }
+  .ports a:hover b { color: #fff; }
+  .ports b { display: block; font-family: var(--px); font-size: 12px; line-height: 1.6; color: var(--gold); font-weight: normal; margin-bottom: 8px; text-shadow: 2px 2px 0 var(--ink); }
+  .ports i { display: block; font-style: normal; font-size: 21px; line-height: 1.15; }
+  .ports a::after { content: "▶"; position: absolute; right: 14px; bottom: 10px; font-size: 14px; color: var(--gold); }
+
+  footer { margin-top: 64px; padding: 26px 16px 40px; text-align: center; background: var(--wood-dk); color: #ffe9b0; box-shadow: inset 0 6px 0 0 var(--ink); }
+  footer a { color: var(--gold); }
+  footer p + p { margin-top: 4px; opacity: .75; font-size: 19px; }
 
   @media (max-width: 560px) {
-    body { font-size: 20px; }
-    .tag { padding: 3px 4px; }
-    .card { font-size: 19px; padding: 10px; }
+    body { font-size: 21px; }
+    .wrap { width: min(100% - 28px, 1000px); }
+    .dialog { flex-direction: column; align-items: center; text-align: center; }
+    .dialog .face { width: 72px; height: 78px; }
+    .sign { padding: 18px 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .roster button, .ports a { transition: none; }
   }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Gua Bajak Laut <span>megawan</span></h1>
+  <div class="sign wood">
+    <h1>MEGAWAN</h1>
+    <p>Pulau Bajak Laut: tempat kru kecil mengurus awan dan kode</p>
+  </div>
 </header>
 
-<main>
-  <div class="stage">
-    <div class="cave" id="stage">
-      <canvas id="cave" width="640" height="360" role="img" aria-label="Sepuluh awak bajak laut sibuk bekerja di dalam gua: memindahkan harta karun, menambal kapal, memasak, dan mengintai."></canvas>
-      <div id="tags"></div>
-      <div class="card" id="card" role="dialog" aria-live="polite" hidden></div>
+<main class="wrap">
+  <section class="stage-wrap" aria-label="Pulau bajak laut">
+    <div class="frame wood" id="frame">
+      <canvas id="scene" width="320" height="180" role="img"
+        aria-label="Pulau bajak laut di siang hari. Kapten berdiri di kemudi kapal yang bersandar di dermaga, sementara kru bekerja: first mate memindahkan peti, navigator membaca peta, pengintai mengawasi dari tiang, koki memasak, tukang kayu memalu, gunner menembakkan meriam, dan kelasi cilik memancing."></canvas>
     </div>
-  </div>
 
-  <section>
-    <h2 class="sec">Daftar Kru</h2>
-    <ol class="roster" id="roster"></ol>
+    <div class="dialog px" id="dialog" aria-live="polite">
+      <div class="face"><canvas id="face" width="24" height="26" aria-hidden="true"></canvas></div>
+      <div>
+        <p class="rank" id="d-rank">SELAMAT DATANG</p>
+        <h2 class="who" id="d-who">Ahoy, pendatang!</h2>
+        <p class="say" id="d-say"></p>
+        <a class="go" id="d-go" href="#" hidden></a>
+      </div>
+    </div>
   </section>
 
-  <section class="harbor">
-    <div>
-      <h2 class="sec">Pelabuhan</h2>
-      <ul class="ports">
-        <li class="port"><a href="games/pirates/"><b>Pirates</b>Game berlayar kecil. Arahkan kapal ke pulau untuk melihat kerjaan cloud, catatan, dan RPG bajak laut.</a></li>
-        <li class="port"><a href="games/hijaiyah/"><b>Belajar Huruf Hijaiyah</b>Game belajar untuk anak: 28 huruf hijaiyah dan harakatnya, lengkap dengan suara.</a></li>
-      </ul>
-    </div>
+  <section class="block" aria-labelledby="crew-h">
+    <h2 class="sec" id="crew-h"><span class="wood">AWAK KAPAL</span></h2>
+    <ul class="roster" id="roster"></ul>
+  </section>
+
+  <section class="block" aria-labelledby="port-h">
+    <h2 class="sec" id="port-h"><span class="wood">PELABUHAN</span></h2>
+    <ul class="ports">
+      <li><a class="wood" href="games/pirates/"><b>PIRATES</b><i>Game berlayar kecil. Arahkan kapal ke pulau untuk melihat kerjaan cloud, catatan, dan RPG bajak laut.</i></a></li>
+      <li><a class="wood" href="games/hijaiyah/"><b>HURUF HIJAIYAH</b><i>Game belajar untuk anak: 28 huruf hijaiyah dan harakatnya, lengkap dengan suara.</i></a></li>
+      <li><a class="wood" href="https://github.com/megawan"><b>GITHUB</b><i>Peta harta karun: semua repo dan catatan ada di github.com/megawan.</i></a></li>
+    </ul>
   </section>
 </main>
 
 <footer>
+  <p>Dibangun di dek kapal dengan canvas dan kesabaran.</p>
   <p><a href="https://github.com/megawan">github.com/megawan</a></p>
 </footer>
 
 <script>
 (() => {
   "use strict";
+  const W = 320, H = 180, HOR = 88;
   const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const W = 320, H = 180, S = 2; // scene units; one unit is S device pixels
 
-  /* ================= data ================= */
-  // Top 10 repos by commits on the default branch. Private repos are anonymised on purpose (p: true).
-  const REPOS = [
-    { n: "", p: true, c: 379, d: "Repo private. Isinya dirahasiakan, tapi dialah yang paling sering disentuh." },
-    { n: "megawan.github.io", c: 52, l: "HTML", d: "Dek kapal ini: halaman utama dan game-game kecil." },
-    { n: "AWScripting", c: 27, l: "Shell", d: "Kumpulan AWS CLI untuk mempermudah kerjaan." },
-    { n: "", p: true, c: 25, d: "Repo private. Isinya dirahasiakan." },
-    { n: "valkyrie", c: 13, l: "Perl", d: "Alat kecil penangkal brute force SSH dan serangan kamus.", a: true },
-    { n: "ansible-playbook", c: 10, d: "Koleksi playbook untuk mempermudah hidup kerja." },
-    { n: "", p: true, c: 9, d: "Repo private. Isinya dirahasiakan." },
-    { n: "", p: true, c: 7, d: "Repo private. Isinya dirahasiakan." },
-    { n: "lambda-iam-autoreminder", c: 5, l: "Python", d: "Lambda pengingat otomatis untuk IAM." },
-    { n: "", p: true, c: 5, d: "Repo private. Isinya dirahasiakan." }
-  ];
+  /* ================= crew ================= */
+  const LOOK = {
+    captain:  { hat: "tri",  hatc: "#1a1a2e", feather: 1, skull: 1, shirt: "#c8372d", pants: "#2a1c10", beard: "#2a1c10", coat: 1, patch: 1 },
+    mate:     { hat: "tri",  hatc: "#1d3a5c", shirt: "#2f6fb0", pants: "#2a1c10", beard: "#8a4a1a" },
+    nav:      { hat: "band", band: "#1f9d8a", hair: "#2a1c10", shirt: "#e8e2cc", pants: "#163a44", vest: "#1f9d8a" },
+    qm:       { hat: "none", hair: "#c9c9d0", shirt: "#7a4bb0", pants: "#3a2a4a", glasses: 1 },
+    lookout:  { hat: "band", band: "#f0dfb0", hair: "#c9742a", shirt: "#4aa84a", pants: "#2a4a2a" },
+    gunner:   { hat: "band", band: "#15151c", hair: "#15151c", shirt: "#4a4a52", pants: "#22222a", beard: "#2a1c10" },
+    cook:     { hat: "chef", shirt: "#f4f4ee", pants: "#3a3a40", apron: 1 },
+    carp:     { hat: "cap",  hatc: "#c9a45a", hair: "#5a2f14", shirt: "#8a5a2b", pants: "#3d1f0c", beard: "#6b3b1a" },
+    kid:      { hat: "cap",  hatc: "#2f6fb0", hair: "#5a2f14", shirt: "#e8eef0", stripes: "#2f6fb0", pants: "#1d3a5c" }
+  };
 
-  // Index = rank. Each rank has a look and a job.
   const CREW = [
-    { t: "KAPTEN",        job: "Mengawasi tumpukan harta karun",   hat: "tri",  shirt: "#c8372d", pants: "#2a1c10", beard: "#2a1c10", feather: true, skull: true },
-    { t: "FIRST MATE",    job: "Mengangkut peti harta ke kapal",   hat: "tri",  shirt: "#2f6fb0", pants: "#2a1c10", hatc: "#1d3a5c" },
-    { t: "QUARTERMASTER", job: "Mencatat dan menghitung koin",     hat: "band", shirt: "#7a4bb0", pants: "#3a2a4a", band: "#e8c872", patch: true },
-    { t: "BOSUN",         job: "Menambal lambung kapal yang bocor", hat: "band", shirt: "#d98a1c", pants: "#4a3320", band: "#c8372d", beard: "#6b3b1a" },
-    { t: "GUNNER",        job: "Mengasah golok di batu asah",      hat: "band", shirt: "#4a4a52", pants: "#22222a", band: "#111", beard: "#2a1c10" },
-    { t: "NAVIGATOR",     job: "Membaca peta pelayaran",           hat: "tri",  shirt: "#1f9d8a", pants: "#163a44", hatc: "#0f5c52" },
-    { t: "KOKI",          job: "Mengaduk sup di kuali",            hat: "chef", shirt: "#f4f4ee", pants: "#3a3a40", apron: true },
-    { t: "TUKANG KAYU",   job: "Menggergaji papan di geladak",     hat: "band", shirt: "#8a5a2b", pants: "#3d1f0c", band: "#c9a45a" },
-    { t: "PENGINTAI",     job: "Mengintai dari tiang tertinggi",   hat: "band", shirt: "#4aa84a", pants: "#2a4a2a", band: "#f0dfb0" },
-    { t: "KELASI",        job: "Mengepel lantai gua",              hat: "none", shirt: "#e8eef0", pants: "#1d3a5c", stripes: "#2f6fb0", hair: "#5a2f14" }
+    { id: "captain", look: "captain", name: "Kapten Megawan", rank: "1 · KAPTEN", job: "Memegang kemudi seluruh kapal",
+      say: "Akulah yang memegang kemudi. Awan, otomasi, dan keamanan server semuanya lewat meja kapten ini. Selamat datang di pulauku!",
+      link: ["https://github.com/megawan", "Buka GitHub"] },
+    { id: "mate", look: "mate", name: "Ansible", rank: "2 · FIRST MATE", job: "Mengangkut playbook ke kapal",
+      say: "Aku mengangkut peti-peti playbook dari pantai ke kapal. Sekali tulis, jalan di semua server. Kapten tinggal menunjuk." },
+    { id: "nav", look: "nav", name: "AWScripting", rank: "3 · NAVIGATOR", job: "Membaca peta lautan AWS",
+      say: "Kumpulan AWS CLI untuk mempermudah kerjaan. Tanpa peta ini, kapal bisa nyasar ke tagihan yang tidak perlu." },
+    { id: "qm", look: "qm", name: "Lambda Reminder", rank: "4 · QUARTERMASTER", job: "Mencatat dan mengingatkan IAM",
+      say: "Aku mencatat semua kunci dan akses di buku ini. Kalau ada yang lupa dirotasi, lambda otomatisku akan mengingatkan." },
+    { id: "gunner", look: "gunner", name: "Valkyrie", rank: "5 · GUNNER", job: "Menembak penyusup SSH",
+      say: "Alat kecil dalam Perl untuk menangkal brute force SSH dan serangan kamus. Siapa pun yang mengetuk pintu terlalu sering, kena meriam." },
+    { id: "lookout", look: "lookout", name: "Si Mata Elang", rank: "6 · PENGINTAI", job: "Mengawasi cakrawala dari tiang",
+      say: "Dari tiang tertinggi aku mengawasi log, alarm, dan hal-hal yang terlihat mencurigakan di kejauhan. Kapal ini aman selama aku melek." },
+    { id: "cook", look: "cook", name: "Koki Shell", rank: "7 · KOKI", job: "Mengaduk skrip jadi sup",
+      say: "Sedikit bash, sedikit curl, banyak sabar. Skrip kecil yang diaduk pelan-pelan jadi sup yang bisa dimakan seluruh kru." },
+    { id: "carp", look: "carp", name: "Tukang Kayu", rank: "8 · TUKANG KAYU", job: "Memalu papan dek kapal",
+      say: "Aku memalu papan dek kapal ini: halaman utama dan game-game kecil di pulau ini. Masih ada beberapa papan yang belum dipaku." },
+    { id: "kid", look: "kid", name: "Kelasi Cilik", rank: "9 · KELASI", job: "Memancing sambil belajar",
+      say: "Sambil memancing aku belajar huruf hijaiyah! Ada 28 huruf lengkap dengan harakat dan suaranya. Mau ikut belajar?",
+      link: ["games/hijaiyah/", "Main game hijaiyah"] },
+    { id: "parrot", look: null, name: "Polly", rank: "MASKOT", job: "Terbang, berkoar, tidak bekerja",
+      say: "Kwaak! Tersesat? Klik awak kapal di pulau atau pilih dari daftar. Kalau lapar, koki ada di dekat api unggun!" }
   ];
-  const crewData = REPOS.slice().sort((a, b) => b.c - a.c || a.n.localeCompare(b.n)).slice(0, 10);
+  const byId = Object.fromEntries(CREW.map(c => [c.id, c]));
 
   /* ================= drawing helpers ================= */
-  // Scene coordinates are in "units" (320x180). One unit is S device pixels, so sub-unit
-  // positions and sizes (0.5) give the finer detail.
-  const SKIN = "#f2c28b", DARK = "#2a1c10", GOLD = "#f2b632", WHITE = "#fff";
-  const cave = document.getElementById("cave");
-  const ctx = cave.getContext("2d");
-  const bgc = document.createElement("canvas"); bgc.width = W * S; bgc.height = H * S;
-  const fgc = document.createElement("canvas"); fgc.width = W * S; fgc.height = H * S;
-  let g = ctx;
-
-  const r = (x, y, w, h, c) => {
-    g.fillStyle = c;
-    g.fillRect(Math.round(x * S), Math.round(y * S), Math.max(1, Math.round(w * S)), Math.max(1, Math.round(h * S)));
-  };
-  // Bresenham at device-pixel resolution; th is the thickness in device pixels
-  function line(x0, y0, x1, y1, c, th) {
-    th = th || 1;
-    x0 = Math.round(x0 * S); y0 = Math.round(y0 * S); x1 = Math.round(x1 * S); y1 = Math.round(y1 * S);
+  const SKIN = "#f2c28b", DARK = "#2a1c10", GOLD = "#f2b632";
+  const rnd = i => { const s = Math.sin(i * 12.9898 + 4.1) * 43758.5453; return s - Math.floor(s); };
+  const mk = () => { const c = document.createElement("canvas"); c.width = W; c.height = H; return c; };
+  const R = (c, x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), w, h); };
+  function L(c, x0, y0, x1, y1, col) {
+    x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
     const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
     let e = dx + dy;
-    g.fillStyle = c;
     for (;;) {
-      g.fillRect(x0, y0, th, th);
+      R(c, x0, y0, 1, 1, col);
       if (x0 === x1 && y0 === y1) break;
       const e2 = 2 * e;
       if (e2 >= dy) { e += dy; x0 += sx; }
       if (e2 <= dx) { e += dx; y0 += sy; }
     }
   }
-  const rng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-  const jit = n => { const s = Math.sin(n * 12.9898) * 43758.5453; return s - Math.floor(s); };
-  const hex = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
-  const mix = (a, b, u) => { const A = hex(a), B = hex(b); return "rgb(" + A.map((v, i) => Math.round(v + (B[i] - v) * u)).join(",") + ")"; };
-  const dark = (c, u) => mix(c, "#000000", u), light = (c, u) => mix(c, "#ffffff", u);
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const lerp = (a, b, t) => { const A = hex(a), B = hex(b); return "rgb(" + A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(",") + ")"; };
 
-  // One pirate, drawn on a half-unit grid. (x, y) is the point between the feet, in units.
-  // a1/a2 are hand offsets from the shoulders in units; returns the hand positions in units.
-  function person(x, y, L, o) {
-    o = o || {};
-    const f = o.f || 1, lg = o.legs || 0;
-    const X = Math.round(x * S), Y = Math.round(y * S), yb = Y - Math.round((o.bob || 0) * S);
-    const q = (dx, dy, w, h, c, base) => {
-      g.fillStyle = c;
-      g.fillRect(X + (f > 0 ? dx : -dx - w), (base === undefined ? yb : base) + dy, w, h);
-    };
-    const hair = L.hair || "#3a2412", boot = "#3a2412";
-    const sh = dark(L.shirt, .28), hl = light(L.shirt, .18), pd = dark(L.pants, .3);
-    const skinD = "#d9a06a";
-
-    if (!o.noShadow) { g.fillStyle = "rgba(0,0,0,.22)"; g.fillRect(X - 9, Y, 18, 2); g.fillStyle = "rgba(0,0,0,.2)"; g.fillRect(X - 6, Y, 12, 2); }
+  // A person is ~20 units tall and 9 wide. (x, y) = ground point between the feet.
+  // o.hl / o.hr are hand offsets from the left / right shoulder; o.step 0|1|2 lifts a foot.
+  function person(c, x, y, o) {
+    x = Math.round(x); y = Math.round(y);
+    const d = o.dir || 1, st = o.step || 0;
+    R(c, x - 4, y, 9, 1, "rgba(0,0,0,.22)");
     // legs
-    if (lg === 3) {
-      q(-3, -10, 10, 4, L.pants, Y); q(-3, -6, 10, 1, pd, Y);
-      q(5, -10, 4, 10, L.pants, Y); q(5, -3, 7, 3, boot, Y); q(5, -4, 4, 1, "#5a3a1e", Y);
-    } else {
-      const l1 = lg === 1 ? 2 : 0, l2 = lg === 2 ? 2 : 0;
-      [[-5, l1], [1, l2]].forEach(([dx, up], k) => {
-        q(dx, -10 - up, 4, 6, L.pants, Y); q(dx + (k ? 0 : 3), -10 - up, 1, 6, pd, Y);
-        q(dx, -4 - up, 5, 4, boot, Y); q(dx, -4 - up, 4, 1, "#5a3a1e", Y); q(dx, -1 - up, 5, 1, "#1a0e06", Y);
-      });
-    }
-    // arms behind the torso edge: far arm first
-    const sy = yb - 21;
-    const far = [X + (f > 0 ? -6 : 4), sy], near = [X + (f > 0 ? 4 : -6), sy];
-    const hf = [Math.round(far[0] + (o.a2 || [-1, 6])[0] * S * f), Math.round(far[1] + (o.a2 || [-1, 6])[1] * S)];
-    const hn = [Math.round(near[0] + (o.a1 || [1, 6])[0] * S * f), Math.round(near[1] + (o.a1 || [1, 6])[1] * S)];
-    const arm = (s0, h0, c) => {
-      const x0 = s0[0], y0 = s0[1], x1 = h0[0], y1 = h0[1];
-      const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sY = y0 < y1 ? 1 : -1;
-      let e = dx + dy, cx = x0, cy = y0; g.fillStyle = c;
-      for (;;) {
-        g.fillRect(cx, cy, 2, 2);
-        if (cx === x1 && cy === y1) break;
-        const e2 = 2 * e;
-        if (e2 >= dy) { e += dy; cx += sx; }
-        if (e2 <= dx) { e += dx; cy += sY; }
-      }
-    };
-    arm(far, hf, sh);
-    // torso
-    q(-6, -23, 12, 13, L.shirt); q(-6, -23, 2, 13, sh); q(4, -23, 2, 13, hl); q(-6, -11, 12, 1, sh);
-    if (L.stripes) { q(-6, -20, 12, 2, L.stripes); q(-6, -16, 12, 2, L.stripes); }
-    if (L.apron) { q(-4, -19, 8, 9, "#d9d4c0"); q(-4, -12, 8, 1, "#b8b29a"); q(-6, -19, 12, 1, "#d9d4c0"); }
-    if (L.cross) { q(-1, -22, 2, 7, "#c8372d"); q(-3, -20, 6, 2, "#c8372d"); }
-    q(-2, -24, 4, 2, skinD);  // neck
-    q(-6, -12, 12, 2, DARK); q(-1, -12, 3, 2, GOLD); q(0, -11, 1, 1, "#a87a10");
-    arm(near, hn, L.shirt);
-    // hands
-    g.fillStyle = SKIN; g.fillRect(hf[0] - 1, hf[1] - 1, 3, 3); g.fillRect(hn[0] - 1, hn[1] - 1, 3, 3);
-    g.fillStyle = skinD; g.fillRect(hf[0] - 1, hf[1] + 1, 3, 1); g.fillRect(hn[0] - 1, hn[1] + 1, 3, 1);
-
+    R(c, x - 3, y - 5, 2, 3, o.pants); R(c, x + 2, y - 5, 2, 3, o.pants);
+    R(c, x - 3, y - 2 - (st === 1 ? 1 : 0), 2, 2, DARK); R(c, x + 2, y - 2 - (st === 2 ? 1 : 0), 2, 2, DARK);
+    // body
+    R(c, x - 3, y - 11, 7, 6, o.shirt);
+    if (o.stripes) for (let r = 0; r < 6; r += 2) R(c, x - 3, y - 11 + r, 7, 1, o.stripes);
+    if (o.apron) R(c, x - 2, y - 10, 5, 5, "#fff");
+    if (o.vest) { R(c, x - 3, y - 11, 2, 6, o.vest); R(c, x + 2, y - 11, 2, 6, o.vest); }
+    if (o.coat) { R(c, x, y - 11, 1, 5, "#fff3d0"); R(c, x - 1, y - 10, 1, 1, GOLD); R(c, x + 1, y - 8, 1, 1, GOLD); R(c, x - 3, y - 11, 7, 1, "#8a1f19"); }
+    R(c, x - 3, y - 6, 7, 1, DARK); R(c, x, y - 6, 1, 1, GOLD);
     // head
-    q(-5, -35, 10, 11, SKIN); q(-6, -34, 12, 9, SKIN); q(-5, -25, 10, 1, skinD); q(-6, -26, 1, 1, skinD); q(5, -26, 1, 1, skinD);
-    q(-7, -31, 2, 4, "#e6b07a");                                  // ear
-    q(6, -30, 2, 2, "#d99a68");                                    // nose
-    if (L.beard) { q(-6, -29, 12, 5, L.beard); q(-5, -24, 10, 2, L.beard); q(1, -27, 5, 1, dark(L.beard, .2)); }
-    q(-1, -32, 2, 3, DARK); q(3, -32, 2, 3, DARK);                 // eyes
-    q(0, -32, 1, 1, WHITE); q(4, -32, 1, 1, WHITE);
-    q(-2, -34, 4, 1, hair); q(2, -34, 4, 1, hair);                 // brows
-    if (!L.beard) { q(2, -27, 3, 1, "#a8553a"); q(-3, -29, 2, 1, "#e8a080"); }
-    else q(2, -27, 3, 1, "#7a3a2a");
-    if (L.patch) { q(2, -33, 5, 5, "#111"); q(-6, -34, 12, 1, "#111"); q(-1, -33, 4, 1, "#111"); }
-    q(-7, -34, 2, 5, hair);                                         // sideburn
-
-    // headwear
-    if (L.hat === "tri") {
-      const c = L.hatc || "#15151c", cl = light(c, .18);
-      q(-5, -42, 10, 3, c); q(-6, -39, 12, 3, c); q(-5, -42, 10, 1, cl);
-      q(-10, -37, 20, 2, c); q(-11, -39, 3, 3, c); q(8, -39, 3, 3, c);
-      q(-8, -37, 16, 1, GOLD); q(-8, -36, 16, 1, "#a87a10");
-      if (L.skull) { q(-2, -41, 4, 3, WHITE); q(-2, -40, 1, 1, "#111"); q(1, -40, 1, 1, "#111"); q(-1, -38, 2, 1, "#111"); }
-      if (L.feather) { q(6, -49, 2, 8, WHITE); q(8, -47, 2, 5, "#e6e6e6"); q(5, -46, 1, 4, "#e6e6e6"); }
-    } else if (L.hat === "band") {
-      q(-6, -38, 12, 5, L.band); q(-6, -36, 12, 1, dark(L.band, .22)); q(-6, -38, 12, 1, light(L.band, .2));
-      q(-5, -40, 10, 2, hair);
-      q(-10, -35, 4, 3, L.band); q(-12, -33, 3, 4, L.band); q(-9, -32, 2, 4, dark(L.band, .22));
-      q(4, -37, 1, 3, light(L.band, .35)); q(0, -37, 1, 2, light(L.band, .35));
-    } else if (L.hat === "chef") {
-      q(-5, -44, 10, 4, WHITE); q(-8, -42, 5, 5, WHITE); q(3, -42, 5, 5, WHITE); q(-7, -38, 14, 3, WHITE);
-      q(-4, -44, 3, 1, "#e6e6e6"); q(-8, -36, 16, 2, "#d9d4c0"); q(-8, -35, 16, 1, "#b8b29a");
+    R(c, x - 2, y - 16, 5, 5, SKIN);
+    const e1 = x + (d > 0 ? 0 : -2), e2 = x + (d > 0 ? 2 : 0);
+    R(c, e1, y - 14, 1, 1, DARK); R(c, e2, y - 14, 1, 1, DARK);
+    if (o.glasses) { R(c, e1 - 1, y - 15, 3, 1, "#c9c9d0"); R(c, e2 - 1, y - 15, 3, 1, "#c9c9d0"); }
+    if (o.patch) { R(c, d > 0 ? e2 : e1, y - 14, 1, 1, "#000"); R(c, x - 2, y - 15, 5, 1, "#000"); }
+    if (o.beard) { R(c, x - 2, y - 13, 5, 2, o.beard); R(c, x - 1, y - 11, 3, 1, o.beard); R(c, e1, y - 14, 1, 1, DARK); R(c, e2, y - 14, 1, 1, DARK); }
+    // headgear
+    if (o.hat === "tri") {
+      R(c, x - 4, y - 17, 9, 1, o.hatc); R(c, x - 2, y - 19, 5, 2, o.hatc); R(c, x - 1, y - 20, 3, 1, o.hatc);
+      R(c, x - 4, y - 17, 1, 1, GOLD); R(c, x + 4, y - 17, 1, 1, GOLD); R(c, x - 2, y - 17, 5, 1, GOLD);
+      if (o.skull) { R(c, x, y - 19, 1, 1, "#fff"); R(c, x - 1, y - 18, 3, 1, "#fff"); }
+      if (o.feather) { R(c, x + d * 3, y - 21, 1, 3, "#f4f4ee"); R(c, x + d * 4, y - 22, 1, 2, "#e0605a"); }
+    } else if (o.hat === "band") {
+      R(c, x - 2, y - 17, 5, 1, o.hair || "#5a2f14"); R(c, x - 2, y - 16, 5, 1, o.band);
+      R(c, x - d * 3, y - 16, 1, 2, o.band); R(c, x - d * 4, y - 14, 1, 1, o.band);
+    } else if (o.hat === "chef") {
+      R(c, x - 2, y - 17, 5, 1, "#fff"); R(c, x - 3, y - 20, 7, 3, "#fff"); R(c, x - 2, y - 21, 5, 1, "#fff");
+      R(c, x - 3, y - 18, 1, 1, "#dcdcdc"); R(c, x + 3, y - 19, 1, 1, "#dcdcdc");
+    } else if (o.hat === "cap") {
+      R(c, x - 2, y - 17, 5, 1, o.hair || "#5a2f14"); R(c, x - 3, y - 18, 7, 2, o.hatc); R(c, x - 2, y - 19, 5, 1, o.hatc);
+      R(c, x + d * 3 - (d > 0 ? 0 : 1), y - 16, 2, 1, o.hatc);
     } else {
-      q(-6, -38, 12, 4, hair); q(-7, -36, 3, 5, hair); q(-4, -40, 8, 2, hair); q(-3, -39, 3, 1, light(hair, .2));
+      R(c, x - 2, y - 17, 5, 2, o.hair || "#5a2f14"); R(c, x - 3, y - 15, 1, 2, o.hair || "#5a2f14"); R(c, x + 3, y - 15, 1, 2, o.hair || "#5a2f14");
     }
-    return { h1: [hn[0] / S, hn[1] / S], h2: [hf[0] / S, hf[1] / S] };
+    // arms
+    const hl = o.hl || [0, 4], hr = o.hr || [0, 4];
+    L(c, x - 4, y - 10, x - 4 + hl[0], y - 10 + hl[1], o.shirt); R(c, x - 4 + hl[0], y - 10 + hl[1], 1, 1, SKIN);
+    L(c, x + 4, y - 10, x + 4 + hr[0], y - 10 + hr[1], o.shirt); R(c, x + 4 + hr[0], y - 10 + hr[1], 1, 1, SKIN);
   }
 
-  /* ================= static background ================= */
-  function buildBG() {
-    const rnd = rng(11);
-    g = bgc.getContext("2d");
+  function parrot(c, x, y, d, f, big) {
+    x = Math.round(x); y = Math.round(y);
+    const s = big ? 2 : 1;
+    R(c, x - d * 4 * s - (d > 0 ? 0 : -s), y + s, 4 * s, s, "#2f6fb0");          // tail
+    R(c, x, y, 5 * s, 3 * s, "#d8312a");                                         // body
+    R(c, x + (d > 0 ? 5 : -2) * s, y - s, 3 * s, 3 * s, "#d8312a");               // head
+    R(c, x + (d > 0 ? 8 : -3) * s, y, s, s, GOLD);                               // beak
+    R(c, x + (d > 0 ? 6 : -1) * s, y - s, s, s, "#fff");                         // eye
+    R(c, x + 1 * s, y + (f ? -2 * s : 3 * s), 3 * s, 2 * s, "#2f6fb0");          // wing
+    R(c, x + 1 * s, y + (f ? -2 * s : 3 * s) + (f ? 0 : s), 3 * s, s, "#f2b632");
+  }
 
-    // wall: smooth vertical gradient, then rock mottling at sub-unit size
-    const stops = ["#0d0c1e", "#12112a", "#171534", "#1d1a3e", "#231f46", "#2a2550", "#312b58", "#383160", "#3e3768", "#443d6e", "#4a4274", "#4e4678"];
-    for (let y = 0; y < 144; y += 1) {
-      const u = y / 144 * (stops.length - 1), i = Math.floor(u);
-      r(0, y, W, 1, mix(stops[i], stops[Math.min(i + 1, stops.length - 1)], u - i));
+  /* ================= static layers ================= */
+  const back = mk(), front = mk();
+  (function buildBack() {
+    const c = back.getContext("2d");
+    const sky = ["#4fa9ee", "#6dbbf3", "#8accf6", "#a9dcf9", "#c6e8fb"], band = HOR / 5;
+    for (let y = 0; y < HOR; y++) {
+      const i = Math.min(4, Math.floor(y / band)), pos = y - i * band;
+      R(c, 0, y, W, 1, sky[i]);
+      if (i < 4 && pos > band - 3) for (let x = y % 2; x < W; x += 2) R(c, x, y, 1, 1, sky[i + 1]);
     }
-    for (let i = 0; i < 900; i++) {
-      r(rnd() * W, rnd() * 140, .5 + rnd() * 4, .5 + rnd() * 1.5, rnd() < .5 ? "rgba(0,0,0,.16)" : "rgba(255,255,255,.045)");
+    // sun
+    for (let dy = -12; dy <= 12; dy++) for (let dx = -12; dx <= 12; dx++) {
+      const d = dx * dx + dy * dy;
+      if (d <= 49) R(c, 270 + dx, 24 + dy, 1, 1, "#fff7c8");
+      else if (d <= 81) R(c, 270 + dx, 24 + dy, 1, 1, "#ffe27a");
+      else if (d <= 144 && (dx + dy) % 2 === 0) R(c, 270 + dx, 24 + dy, 1, 1, "#ffeeb0");
     }
-    for (let i = 0; i < 40; i++) { // cracks
-      let cx = rnd() * W, cy = 20 + rnd() * 110;
-      for (let k = 0; k < 7; k++) { r(cx, cy, .5, .5, "rgba(0,0,0,.35)"); cx += (rnd() - .5) * 2; cy += .5 + rnd(); }
+    // far islands
+    for (let x = 18; x < 120; x++) { const h = Math.round(9 * Math.pow(Math.sin(Math.PI * (x - 18) / 102), 0.8)); R(c, x, HOR - h, 1, h, "#5f9f8f"); }
+    R(c, 70, HOR - 15, 1, 7, "#3d6b5a"); R(c, 67, HOR - 16, 7, 1, "#3d6b5a"); R(c, 68, HOR - 17, 5, 1, "#4d8b72");
+    for (let x = 160; x < 210; x++) { const h = Math.round(5 * Math.sin(Math.PI * (x - 160) / 50)); R(c, x, HOR - h, 1, h, "#7fb3a8"); }
+    // sea
+    for (let y = HOR; y < H; y++) R(c, 0, y, W, 1, lerp("#3d9fe0", "#1b62a6", Math.min(1, Math.floor((y - HOR) / 8) / 11)));
+    R(c, 0, HOR, W, 1, "#b8e3ff");
+  })();
+
+  (function buildFront() {
+    const c = front.getContext("2d");
+    // hill + grass
+    for (let x = 0; x < 114; x++) {
+      const top = 119 - Math.round(17 * Math.pow(Math.sin(Math.PI * x / 114), 0.7));
+      R(c, x, top, 1, 129 - top, "#5aa833"); R(c, x, top, 1, 1, "#86d14f"); R(c, x, top + 1, 1, 1, "#74c13f");
     }
-
-    // ceiling and stalactites
-    const ch = x => 12 + 6 * Math.sin(x * .07) + 4 * Math.sin(x * .19 + 1) + 1.5 * Math.sin(x * .6);
-    for (let x = 0; x < W; x += .5) r(x, 0, .5, ch(x), "#07060f");
-    for (let x = 0; x < W; x += .5) r(x, ch(x) - 1, .5, 1, "#100e22");
-    for (let sx = 5; sx < W; sx += 8 + (rnd() * 8 | 0)) {
-      const len = 6 + (rnd() * 15 | 0), top = ch(sx);
-      for (let k = 0; k < len; k += .5) {
-        const w = Math.max(.5, 4.5 * Math.pow(1 - k / len, 1.2));
-        r(sx - w / 2, top + k, w, .5, "#0a0918");
-        r(sx - w / 2, top + k, Math.min(.5, w), .5, "#1c1938");
-      }
+    R(c, 0, 119, 131, 10, "#6dbb3f");
+    for (let i = 0; i < 70; i++) {
+      const x = rnd(i) * 128, y = 108 + rnd(i + 99) * 19;
+      if (y > 119 || x > 6) { R(c, x, y, 1, 2, "#8fd35a"); R(c, x + 1, y + 1, 1, 1, "#4e9a2e"); }
     }
-    // skylight, which the mast pokes through
-    for (let x = 238; x < 302; x += .5) {
-      const h = 16 + 3 * Math.sin(x * .5) + 1.5 * Math.sin(x * 1.3);
-      for (let y = 0; y < h; y += .5) r(x, y, .5, .5, mix("#4aa5da", "#d4f0f8", y / 20));
+    for (let i = 0; i < 9; i++) { const x = 4 + rnd(i + 50) * 120, y = 121 + rnd(i + 70) * 6; R(c, x, y, 1, 1, i % 2 ? "#ffd35c" : "#fff"); R(c, x, y + 1, 1, 1, "#3f8a2a"); }
+    R(c, 0, 128, 131, 1, "#3f8a2a");
+    // sand
+    const edge = y => 131 + Math.min(8, Math.floor((y - 128) * 0.8));
+    for (let y = 129; y < H; y++) {
+      const e = edge(y);
+      R(c, 0, y, e, 1, "#f1d78e"); R(c, e - 3, y, 3, 1, "#dcc27a");
     }
-
-    // floor
-    for (let y = 140; y < H; y++) r(0, y, 198, 1, mix("#5a4a3a", "#2f261f", (y - 140) / 40));
-    r(0, 140, 198, 1, "#8a7358"); r(0, 141, 198, 1, "#6a5742");
-    for (let i = 0; i < 380; i++) r(rnd() * 196, 142 + rnd() * 37, .5 + rnd() * 3, .5 + rnd(), rnd() < .5 ? "rgba(0,0,0,.2)" : "rgba(255,255,255,.07)");
-    // water
-    for (let y = 140; y < H; y++) r(198, y, 122, 1, mix("#2a7494", "#0e3345", (y - 140) / 40));
-    r(194, 140, 6, 40, "#3a2f28"); r(194, 140, 6, 1, "#6a5744"); r(196, 142, .5, 38, "#51443a");
-
-    // treasure pile, built column by column
-    const heap = x => 31 * Math.pow(Math.sin((x - 2) / 56 * Math.PI), .75) + .8 * Math.sin(x * 1.7);
-    for (let x = 2; x < 58; x += .5) r(x, 152 - heap(x), .5, heap(x), "#d9a21a");
-    const gold = ["#ffd96b", "#f2b632", "#c98a14", "#fff0a0", "#b8741a", "#e0a11c"];
-    for (let i = 0; i < 700; i++) {
-      const x = 3 + rnd() * 54, hh = heap(x), y = 152 - rnd() * hh;
-      r(x, y, 1 + rnd(), .5 + rnd() * .5, gold[rnd() * gold.length | 0]);
-    }
-    [["#e02e3c", 22, 128], ["#3a7bd5", 34, 134], ["#3fc16b", 14, 138], ["#e02e3c", 44, 140], ["#8f5bd6", 28, 144], ["#3a7bd5", 9, 146]].forEach(([c, x, y]) => {
-      r(x, y, 1.5, 1.5, c); r(x, y, .5, .5, "#fff"); r(x + 1, y + 1, .5, .5, dark(c, .4));
-    });
-    // chests
-    [[4, 141, 15], [40, 142, 14]].forEach(([x, y, w]) => {
-      r(x, y, w, 10, "#5a2f14"); r(x, y, w, 3, "#8a4b1f"); r(x, y, w, .5, "#b87a3a");
-      for (let k = 3; k < 10; k += 2) r(x, y + k, w, .5, "#43220e");
-      r(x, y + 4, w, 1, GOLD); r(x + 1, y + 4, w - 2, .5, "#ffd96b");
-      r(x + w / 2 - 1.5, y + 3, 3, 3.5, GOLD); r(x + w / 2 - .5, y + 4, 1, 1.5, "#000");
-      r(x, y, 1, 10, "#a87a10"); r(x + w - 1, y, 1, 10, "#a87a10");
-    });
-
-    // captain's ledge
-    r(60, 141, 24, 11, "#4a4058"); r(60, 141, 24, 1.5, "#7a6c88"); r(60, 142.5, 24, .5, "#5d5070");
-    for (let i = 0; i < 30; i++) r(60 + rnd() * 23, 144 + rnd() * 7, 1 + rnd() * 2, .5, rnd() < .5 ? "#382f46" : "#5d5070");
-
-    // wall chart
-    r(80, 96, 32, 30, "#e8d49a"); r(80, 96, 32, .5, "#8a6a30"); r(80, 125.5, 32, .5, "#8a6a30"); r(80, 96, .5, 30, "#8a6a30"); r(111.5, 96, .5, 30, "#8a6a30");
-    r(80.5, 96.5, 31, 1, "#f0e2b4"); r(80.5, 124.5, 31, 1, "#d6c08a");
-    for (let i = 0; i < 60; i++) r(82 + rnd() * 28, 98 + rnd() * 26, 1 + rnd(), .5, "rgba(138,106,48,.25)");
-    const island = (x, y, w, h) => { r(x, y, w, h, "#6aa84f"); r(x + .5, y - 1, w - 1.5, 1, "#6aa84f"); r(x + 1, y + h - .5, w - 2, 1, "#4a8a3a"); r(x + w * .3, y, w * .3, .5, "#8fc66f"); };
-    island(86, 104, 8, 5); island(100, 112, 7, 4); island(90, 116, 5, 3);
-    for (let i = 0; i < 18; i++) r(94 + i * 1, 108 + (i % 3 ? 1 : 0) + Math.sin(i) * 1.2, .5, .5, "#8a3b1c");
-    for (let i = 0; i < 5; i++) { r(102 + i, 117 + i, .5, .5, "#c8372d"); r(106 - i, 117 + i, .5, .5, "#c8372d"); }
-    r(104, 98, 1, 5, "#8a3b1c"); r(102, 100, 5, 1, "#8a3b1c"); r(104, 98, 1, 1, "#c8372d");
-    r(82, 94, 2, 2, "#999"); r(108, 94, 2, 2, "#999");
-
-    // torches
-    [[58, 70], [142, 62], [206, 76]].forEach(([x, y]) => {
-      r(x, y, 2, 10, "#5a2f14"); r(x, y, .5, 10, "#7a4a24"); r(x - 1, y, 4, 2, "#3a3a44"); r(x - 1, y, 4, .5, "#5a5a66");
-    });
-
-    // cauldron over a fire
-    r(150, 148, 18, 3, "#3d1f0c"); r(152, 146, 14, 2, "#5a2f14"); r(149, 149, 20, .5, "#26140a");
-    line(153, 150, 159, 133, "#2a2a30", 2); line(167, 150, 161, 133, "#2a2a30", 2);
-    for (let i = 0; i < 13; i += .5) {
-      const u = i / 13, w = 19 * (1 - .32 * u * u);
-      r(160 - w / 2, 136 + i, w, .5, i < 2 ? "#3a3a46" : mix("#262633", "#101018", u));
-    }
-    r(154, 139, 1.5, 6, "#5a5a6a"); r(150, 136, 20, 1.5, "#4a4a58"); r(150, 136, 20, .5, "#6a6a7a");
-
-    // grindstone frame
-    r(185, 148, 2, 3, "#5a2f14"); r(191, 148, 2, 3, "#5a2f14"); r(184, 147, 10, 1, "#3d1f0c"); r(184, 147, 10, .5, "#5a2f14");
-
-    // the ship
-    for (let y = 124; y <= 150; y += .5) {
-      const left = 214 + (y - 124) * .9;
-      const plank = Math.floor((y - 124) / 3) % 2;
-      r(left, y, 330 - left, .5, y > 144 ? "#2f3b2a" : plank ? "#4a250f" : "#5a2f14");
-    }
-    for (let y = 127; y < 144; y += 3) r(214 + (y - 124) * .9, y, 120, .5, "#2e1608");
-    for (let i = 0; i < 80; i++) r(230 + rnd() * 90, 125 + rnd() * 18, 2 + rnd() * 4, .5, "rgba(255,200,140,.07)");
-    r(208, 118, 120, 6, "#8a4b1f"); r(208, 118, 120, 1, "#c88a4a"); r(208, 123, 120, .5, "#5a2f14");
-    r(206, 112, 8, 8, "#8a4b1f"); r(206, 112, 8, .5, "#c88a4a"); line(206, 112, 194, 104, "#3d1f0c", 3);
-    [238, 252, 306].forEach(x => { r(x, 133, 5, 4, "#1a0e06"); r(x, 133, 5, .5, "#6a4a22"); r(x + 1, 134, 3, 2, "#050302"); });
-    r(282, 127, 12, 11, "#8a6a3a"); r(283, 128, 10, .5, "#6a4a22"); r(283, 132, 10, .5, "#6a4a22"); r(286, 130, 4, 4, "#1a0e06"); r(284, 129, 1, 9, "#5a3a14");
-    r(267, 34, 3, 90, "#3d1f0c"); r(267, 34, .5, 90, "#6a3a1a");
-    r(250, 52, 36, 2, "#3d1f0c"); r(252, 54, 32, 6, "#e6d9b0"); r(252, 59, 32, 1, "#cbbf9a"); r(252, 54, 32, .5, "#fff");
-    [256, 264, 272, 280].forEach(x => r(x, 54, .5, 6, "#cbbf9a"));
-    line(259, 46, 232, 118, "#8a7a60"); line(278, 46, 310, 118, "#8a7a60"); line(268, 55, 224, 118, "#8a7a60");
-    r(258, 40, 21, 1, "#3d1f0c");
-    // deck clutter
-    r(230, 111, 9, 11, "#6b3b1a"); r(230, 113, 9, .5, "#2a1c10"); r(230, 118, 9, .5, "#2a1c10"); r(230, 111, 9, 1, "#8a4b1f"); r(230, 111, .5, 11, "#8a4b1f");
-    r(241, 114, 8, 8, "#6b3b1a"); r(241, 116, 8, .5, "#2a1c10"); r(241, 114, 8, 1, "#8a4b1f");
-    r(284, 119, 2, 5, "#5a2f14"); r(296, 119, 2, 5, "#5a2f14"); r(282, 117, 18, 2, "#c9a45a"); r(282, 117, 18, .5, "#e8c47a");
-    // bosun's hanging plank
-    r(262, 138, 32, 2, "#9a6a30"); r(262, 138, 32, .5, "#c48a40"); r(263, 124, .5, 14, "#cdbb8a"); r(293, 124, .5, 14, "#cdbb8a");
+    for (let i = 0; i < 150; i++) { const x = rnd(i + 300) * 128, y = 131 + rnd(i + 700) * 48; R(c, x, y, 1, 1, i % 3 ? "#dcbf74" : "#fff0b8"); }
+    // rocks
+    [[34, 176], [100, 134]].forEach(([x, y]) => { R(c, x, y, 6, 3, "#8c8c96"); R(c, x + 1, y - 1, 4, 1, "#a9a9b4"); R(c, x, y + 2, 6, 1, "#5e5e68"); });
+    // crates on the beach (start of the haul)
+    R(c, 112, 122, 7, 6, "#c9a45a"); R(c, 112, 122, 7, 1, "#e0c27a"); R(c, 112, 125, 7, 1, "#8a6a2a"); R(c, 115, 122, 1, 6, "#8a6a2a");
+    R(c, 106, 124, 6, 4, "#b8923f"); R(c, 108, 124, 1, 4, "#8a6a2a");
+    // hut
+    R(c, 60, 106, 21, 13, "#b07a40");
+    for (let y = 108; y < 119; y += 3) R(c, 60, y, 21, 1, "#8a5a2b");
+    for (let r = 0; r < 7; r++) R(c, 70 - (r + 1) * 2 - 1, 99 + r, (r + 1) * 4 + 3, 1, r === 0 ? "#e0605a" : "#c8372d");
+    R(c, 56, 105, 29, 1, "#8a1f19");
+    R(c, 66, 110, 6, 9, "#3a1d0a"); R(c, 73, 109, 5, 5, "#ffe27a"); R(c, 75, 109, 1, 5, "#8a5a2b"); R(c, 73, 111, 5, 1, "#8a5a2b");
+    R(c, 76, 94, 4, 8, "#8c8c96");
+    // dock
+    R(c, 120, 135, 72, 3, "rgba(8,40,80,.35)");
+    for (let k = 0; k < 4; k++) { R(c, 124 + k * 24, 134, 3, 13, "#5a2f14"); R(c, 124 + k * 24, 146, 3, 1, "#3d1f0c"); }
+    R(c, 120, 130, 72, 4, "#a9753a"); R(c, 120, 130, 72, 1, "#d2a35e"); R(c, 120, 134, 72, 1, "#5a2f14");
+    for (let x = 126; x < 190; x += 6) R(c, x, 131, 1, 3, "#7a4a1e");
+    for (let k = 0; k < 4; k++) { R(c, 123 + k * 24, 126, 5, 4, "#5a2f14"); R(c, 123 + k * 24, 126, 5, 1, "#8a5a2b"); }
+    // crates on the dock (where the haul ends)
+    [[160, 124], [168, 124], [164, 118]].forEach(([x, y]) => { R(c, x, y, 7, 6, "#c9a45a"); R(c, x, y, 7, 1, "#e0c27a"); R(c, x, y + 5, 7, 1, "#8a6a2a"); R(c, x + 3, y, 1, 6, "#8a6a2a"); });
+    R(c, 174, 122, 7, 8, "#8a5a2b"); R(c, 174, 124, 7, 1, "#3d1f0c"); R(c, 174, 128, 7, 1, "#3d1f0c"); R(c, 174, 122, 7, 1, "#b27a3e");
     // gangplank
-    line(198, 150, 222, 126, "#9a6a30", 5); line(198, 149, 222, 125, "#c48a40", 1);
-    for (let i = 0; i <= 24; i += 6) line(198 + i, 150 - i, 198 + i, 142 - i, "#cdbb8a", 1);
-    line(198, 142, 222, 118, "#cdbb8a", 1);
+    L(c, 190, 132, 198, 121, "#b27a3e"); L(c, 191, 132, 199, 121, "#8a5a2b"); L(c, 189, 132, 197, 121, "#b27a3e");
+    // chest
+    R(c, 8, 154, 13, 8, "#8a5a2b"); R(c, 8, 151, 13, 4, "#b27a3e"); R(c, 8, 154, 13, 1, "#2a1c10"); R(c, 8, 161, 13, 1, "#5a2f14");
+    R(c, 13, 154, 3, 3, GOLD); R(c, 8, 151, 1, 11, "#5a2f14"); R(c, 20, 151, 1, 11, "#5a2f14");
+    R(c, 10, 149, 3, 2, GOLD); R(c, 14, 150, 2, 1, "#ffe27a"); R(c, 17, 149, 2, 2, GOLD);
+  })();
 
-    /* ---- foreground pieces drawn over the crew ---- */
-    g = fgc.getContext("2d");
-    r(108, 139, 26, 3, "#8a4b1f"); r(108, 139, 26, .5, "#c88a4a");
-    r(109, 142, 24, 9, "#5a2f14"); r(109, 146, 24, .5, "#3d1f0c"); r(109, 143, 24, .5, "#6a3a1a"); r(110, 151, 3, 1, "#2a1c10"); r(129, 151, 3, 1, "#2a1c10");
-    r(258, 42, 21, 7, "#5a2f14"); r(258, 42, 21, 1, "#8a4b1f"); r(258, 46, 21, .5, "#3d1f0c");
-    r(214, 146, 110, 5, "rgba(29,95,122,.6)");
-    g = ctx;
-  }
+  /* ================= dynamic scene ================= */
+  const cv = document.getElementById("scene");
+  const ctx = cv.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  const hits = {};
+  let hoverId = null, selId = null;
 
-  /* ================= animated props ================= */
-  function beam(t) {
-    const a = .07 + .02 * Math.sin(t * .8);
-    for (let y = 22; y < 152; y += 2) {
-      const l = 240 - (y - 22) * .55, rr = 300 - (y - 22) * .42;
-      r(l, y, rr - l, 2, "rgba(255,238,170," + a + ")");
+  function cloud(c, x, y, u) {
+    R(c, x + 4 * u, y, 5 * u, u, "#fff"); R(c, x + 2 * u, y + u, 10 * u, u, "#fff");
+    R(c, x, y + 2 * u, 14 * u, u, "#fff"); R(c, x + u, y + 3 * u, 12 * u, u, "#dcebf7");
+  }
+  const CLOUDS = [[20, 14, 2, 3], [150, 30, 2, 2], [240, 8, 2, 1.5], [90, 52, 1, 4], [300, 46, 1, 2.5]];
+
+  function palm(c, x, y, T, ph, h, lean) {
+    let tx = x, ty = y;
+    for (let i = 0; i < h; i++) {
+      tx = x + Math.round(Math.sin(i / h * 1.3) * 5 * lean); ty = y - i;
+      R(c, tx, ty, 2, 1, i % 3 ? "#8a5a2b" : "#6b3b1a");
     }
-    for (let i = 0; i < 9; i++) {
-      const y = 25 + ((t * 5 + i * 14) % 120);
-      const mid = 270 - (y - 22) * .48;
-      r(mid + (i - 4) * 6 + Math.sin(t * .6 + i) * 3, y, 1, 1, "rgba(255,245,200,.8)");
-    }
-  }
-  function flame(x, y, t, s) {
-    const k = Math.floor(t * 10);
-    const h = 5 + (jit(k + x) * 3 | 0);
-    r(x - 1, y - h, 4, h, "#e8590c"); r(x, y - h - 1, 2, h, "#f2b632"); r(x + .5, y - h + 2, 1, h - 2, "#fff2b0");
-    for (let i = 4; i > 0; i--) r(x + 1 - i * 3, y - i * 3, i * 6 - 2, i * 6, "rgba(255,170,60," + (0.025 * s) + ")");
-  }
-  function torches(t) { [[58, 70], [142, 62], [206, 76]].forEach(([x, y]) => flame(x, y, t, 1)); }
-  function lantern(t) {
-    r(121, 16, 1, 96, "#6b5a40");
-    r(118, 112, 7, 8, "#2a1c10"); r(119, 113, 5, 6, jit(Math.floor(t * 8)) > .3 ? "#ffd96b" : "#f2b632");
-    for (let i = 3; i > 0; i--) r(121 - i * 4, 116 - i * 4, i * 8 + 1, i * 8, "rgba(255,200,90,.04)");
-  }
-  function sparkles(t) {
-    [[14, 130], [26, 124], [38, 136], [48, 140], [20, 142], [30, 120], [8, 146], [52, 146]].forEach(([x, y], i) => {
-      if (Math.sin(t * 2.6 + i * 1.9) > .88) { r(x, y - 1, 1, 3, WHITE); r(x - 1, y, 3, 1, WHITE); }
+    const sw = REDUCED ? 0 : Math.sin(T * 1.1 + ph) * 1.5;
+    [[-15, 5], [-10, -2], [-5, -7], [0, -9], [5, -7], [10, -2], [15, 5]].forEach(([dx, dy]) => {
+      const ex = tx + dx + (dx > 0 ? sw : -sw) * Math.abs(dx) / 10, ey = ty + dy + 3;
+      const mx = tx + dx * 0.55, my = ty + dy * 0.5 - 3;
+      L(c, tx + 1, ty, mx, my, "#4fb02e"); L(c, mx, my, ex, ey, "#2f7a20");
+      L(c, mx, my - 1, ex, ey - 1, "#7ad04a");
     });
+    R(c, tx - 1, ty + 1, 2, 2, "#5a2f14"); R(c, tx + 2, ty + 1, 2, 2, "#5a2f14");
   }
-  function cauldron(t) {
-    const k = Math.floor(t * 9);
-    r(155, 147 - (jit(k) * 3 | 0), 3, 3, "#e8590c"); r(160, 146 - (jit(k + 3) * 4 | 0), 3, 4, "#f2b632"); r(164, 148 - (jit(k + 7) * 2 | 0), 2, 2, "#e8590c");
-    r(153, 136, 14, 1, "#8f6a2a"); // soup surface
-    for (let i = 0; i < 5; i++) {
-      const p = (t * .55 + i / 5) % 1;
-      r(160 + Math.sin(p * 6 + i) * 4, 133 - p * 24, p < .6 ? 3 : 2, p < .6 ? 3 : 2, "rgba(230,240,245," + (0.7 * (1 - p)) + ")");
+
+  function ship(c, T, b) {
+    const top = 116 + b, sw = (a, s) => REDUCED ? 0 : Math.sin(a) * s;
+    // rigging
+    L(c, 240, 12, 186, top - 14, "#3a2210"); L(c, 240, 12, 304, top - 6, "#3a2210");
+    // stern cabin
+    R(c, 183, top - 14, 15, 14, "#8a5a2b"); R(c, 182, top - 16, 17, 3, "#5a2f14");
+    for (let y = top - 11; y < top; y += 3) R(c, 183, y, 15, 1, "#6e3b1a");
+    R(c, 187, top - 11, 6, 5, "#ffe27a"); R(c, 190, top - 11, 1, 5, "#8a5a2b"); R(c, 187, top - 9, 6, 1, "#8a5a2b");
+    // masts
+    R(c, 239, 10, 3, top - 10, "#4a2a12"); R(c, 239, 10, 1, top - 10, "#6e3b1a");
+    R(c, 287, 46, 3, top - 46, "#4a2a12"); R(c, 287, 46, 1, top - 46, "#6e3b1a");
+    // bowsprit
+    L(c, 300, top + 1, 319, top - 6, "#4a2a12"); L(c, 300, top + 2, 319, top - 5, "#4a2a12");
+    // sails (rows ripple in the wind)
+    for (let r = 0; r < 44; r++) {
+      const o = Math.round(sw(T * 1.6 + r * 0.15, 1.2));
+      const col = r % 14 === 13 ? "#d9d0b0" : "#f6f2e2";
+      R(c, 224 + o, 52 + r, 32, 1, col); R(c, 248 + o, 52 + r, 8, 1, r % 14 === 13 ? "#cfc59f" : "#e4dcc0");
+    }
+    R(c, 220, 50, 40, 2, "#4a2a12");
+    // skull emblem
+    R(c, 237, 66, 7, 5, "#1a1a2e"); R(c, 238, 71, 5, 2, "#1a1a2e");
+    R(c, 238, 68, 2, 2, "#fff"); R(c, 241, 68, 2, 2, "#fff"); R(c, 240, 70, 1, 1, "#fff");
+    R(c, 239, 72, 1, 1, "#fff"); R(c, 241, 72, 1, 1, "#fff");
+    L(c, 234, 75, 246, 81, "#1a1a2e"); L(c, 246, 75, 234, 81, "#1a1a2e");
+    for (let r = 0; r < 34; r++) {
+      const o = Math.round(sw(T * 1.6 + r * 0.15 + 1, 1));
+      const red = r >= 12 && r <= 17;
+      R(c, 274 + o, 58 + r, 26, 1, red ? "#c8372d" : "#f6f2e2");
+      R(c, 292 + o, 58 + r, 8, 1, red ? "#a82a22" : "#e4dcc0");
+    }
+    R(c, 272, 56, 30, 2, "#4a2a12");
+    // flag
+    R(c, 238, 4, 5, 4, GOLD);
+    for (let col = 0; col < 11; col++) {
+      const o = Math.round(sw(T * 4 + col * 0.7, 1.3));
+      R(c, 242 + col, 5 + o, 1, 7, "#15152a");
+      if (col >= 3 && col <= 6) { R(c, 242 + col, 7 + o, 1, 2, "#fff"); }
+    }
+    // hull
+    for (let r = 0; r < 24; r++) {
+      const l = 182 + Math.floor(r * 0.45), rr = 306 - r;
+      const col = r < 2 ? "#b27a3e" : r < 4 ? "#5a2f14" : r === 9 ? GOLD : r === 13 || r === 14 ? "#a82a22" : r > 20 ? "#3d1f0c" : (r % 4 === 0 ? "#5e3216" : "#6e3b1a");
+      R(c, l, top + r, rr - l, 1, col);
+    }
+    [210, 230, 250, 270].forEach(px => { R(c, px, top + 5, 5, 3, "#140a05"); R(c, px, top + 5, 5, 1, "#3a2210"); });
+    // rail
+    for (let x = 200; x < 300; x += 10) R(c, x, top - 3, 1, 3, "#8a5a2b");
+    R(c, 200, top - 3, 100, 1, "#a9753a");
+    // waterline foam
+    for (let i = 0; i < 12; i++) {
+      const x = 180 + ((i * 11 + (REDUCED ? 0 : T * 9)) % 130);
+      R(c, x, top + 23, 5, 1, "#e6f4ff"); R(c, x + 2, top + 24, 4, 1, "#8cc8f2");
     }
   }
-  function grindstone(t) {
-    const cx = 188, cy = 143, a = t * 6;
-    for (let dy = -5; dy <= 5; dy += .5) { const w = Math.sqrt(25 - dy * dy); r(cx - w, cy + dy, w * 2, .5, dy < -2 ? "#a8a8b4" : "#80808c"); }
-    line(cx, cy, cx + Math.cos(a) * 4, cy + Math.sin(a) * 4, "#55555f", 1);
-    line(cx, cy, cx + Math.cos(a + 2.1) * 4, cy + Math.sin(a + 2.1) * 4, "#55555f", 1);
-    r(cx - .5, cy - .5, 1, 1, "#2a2a30");
-  }
-  function bats(t) {
-    for (let i = 0; i < 2; i++) {
-      const x = ((t * (12 + i * 5) + i * 150) % 380) - 30, y = 30 + i * 12 + Math.sin(t * 3 + i) * 4;
-      const up = Math.floor(t * 8 + i) % 2;
-      r(x, y, 2, 1, "#000"); r(x - 3, y - (up ? 2 : 0), 3, 1, "#000"); r(x + 2, y - (up ? 2 : 0), 3, 1, "#000");
+
+  const clampHit = (id, cx, top, bottom) => { hits[id] = { x0: cx - 7, y0: top, x1: cx + 7, y1: bottom }; };
+
+  function draw(T) {
+    const c = ctx;
+    c.drawImage(back, 0, 0);
+    // clouds
+    CLOUDS.forEach(([x0, y, u, v]) => { const x = ((x0 + (REDUCED ? 0 : T * v)) % (W + 80)) - 50; cloud(c, x, y, u); });
+    // gulls
+    for (let i = 0; i < 3; i++) {
+      const gx = ((i * 120 + (REDUCED ? 60 : T * 7)) % (W + 40)) - 20, gy = 40 + i * 10 + (REDUCED ? 0 : Math.sin(T * 2 + i) * 2);
+      const f = REDUCED ? 0 : Math.floor(T * 3 + i) % 2;
+      R(c, gx - 2, gy + f, 2, 1, "#fff"); R(c, gx + 1, gy + f, 2, 1, "#fff"); R(c, gx, gy + 1 - f * 0, 1, 1, "#fff");
     }
-  }
-  function water(t) {
-    for (let k = 0; k < 7; k++) {
-      const y = 143 + k * 5, sp = 3 + k, len = 5 + k;
-      const off = (t * sp) % (len * 3);
-      for (let x = 200 - len * 3 + off; x < W; x += len * 3) {
-        if (x + len < 200) continue;
-        r(Math.max(x, 200), y, len - Math.max(0, 200 - x), 1, "#7fc3d0");
+    // waves
+    for (let k = 0; k < 18; k++) {
+      const y = HOR + 4 + k * 5, len = 6 + (k % 3) * 2, col = k < 6 ? "#7cc4f2" : "#58a8e2";
+      for (let i = 0; i < 7; i++) {
+        const x = ((i * 52 + k * 17 + (REDUCED ? 0 : T * (4 + (k % 3) * 3))) % (W + 20)) - 10;
+        R(c, x, y, len, 1, col); R(c, x + len + 2, y + 1, 3, 1, col);
       }
     }
-    if (Math.floor(t * 3) % 6 === 0) r(206 + (Math.floor(t * 3) % 11), 156, 1, 1, WHITE);
-  }
-  function drips(t) {
-    [[40, 24], [128, 22], [180, 20]].forEach(([x, y], i) => {
-      const p = ((t * .5 + i * .37) % 1);
-      if (p > .55) { const q = (p - .55) / .45; r(x, y + q * (140 - y), 1, 2, "#8fd0ee"); if (q > .96) r(x - 1, 140, 3, 1, "#8fd0ee"); }
-    });
-  }
+    const b = REDUCED ? 0 : Math.round(Math.sin(T * 1.3));
+    ship(c, T, b);
+    c.drawImage(front, 0, 0);
+    palm(c, 24, 123, T, 0, 30, 1);
+    palm(c, 104, 120, T, 2, 26, -1);
 
-  /* ================= crew activities ================= */
-  const MATE = [[52, 152], [70, 160], [190, 160], [200, 149], [222, 124], [246, 124]];
-  const mateLen = []; let mateTotal = 0;
-  for (let i = 1; i < MATE.length; i++) { const d = Math.hypot(MATE[i][0] - MATE[i - 1][0], MATE[i][1] - MATE[i - 1][1]); mateLen.push(d); mateTotal += d; }
-  function matePos(d) {
-    d = Math.min(Math.max(d, 0), mateTotal);
-    for (let i = 0; i < mateLen.length; i++) {
-      if (d <= mateLen[i]) { const u = d / mateLen[i]; return [MATE[i][0] + (MATE[i + 1][0] - MATE[i][0]) * u, MATE[i][1] + (MATE[i + 1][1] - MATE[i][1]) * u]; }
-      d -= mateLen[i];
-    }
-    return MATE[MATE.length - 1];
-  }
-  function chest(x, y) { r(x, y, 10, 7, "#6b3b1a"); r(x, y, 10, 2, "#8a4b1f"); r(x, y + 3, 10, 1, GOLD); r(x + 4, y + 2, 2, 3, GOLD); }
+    const E = [];
+    const add = (y, fn) => E.push({ y, fn });
 
-  const jobs = [
-    // 0 Kapten: points at the pile, now and then throws an arm up and cheers; parrot on the shoulder
-    (t, L) => {
-      const cheer = t % 9 < 1.6;
-      const p = person(73, 141, L, { f: -1, bob: Math.floor(t * 2) % 2, a1: cheer ? [3, -9 + Math.sin(t * 14) * 2] : [9, -2 + Math.sin(t * 1.5) * 2], a2: [-3, 3] });
-      const fl = Math.floor(t * 6) % 2;
-      r(76, 118, 4, 5, "#d6322a"); r(77, 117, 3, 1, "#d6322a"); r(78 - 3, 119 - fl, 3, 2, "#2f9d4a"); r(75, 121, 1, 1, "#ffd96b"); r(80, 120, 1, 2, "#2f6fb0"); r(78, 118, 1, 1, "#fff");
-      return [73, 114];
-    },
-    // 1 First Mate: carries chests up the gangplank
-    (t, L) => {
-      const T = mateTotal / 22, cyc = 2 * T + 3, u = t % cyc;
-      let x, y, f = 1, lg = 0, bob = 0, a1 = [1, 6], a2 = [-1, 6], carry = false, drop = false;
-      if (u < 1.5) { [x, y] = MATE[0]; a1 = [5, 7]; a2 = [4, 7]; bob = -1; }
-      else if (u < 1.5 + T) { [x, y] = matePos((u - 1.5) * 22); carry = true; lg = 1 + (Math.floor(t * 5) % 2); bob = Math.floor(t * 5) % 2; a1 = [3, -13]; a2 = [-3, -13]; }
-      else if (u < 3 + T) { [x, y] = MATE[MATE.length - 1]; drop = true; bob = -1; a1 = [5, 7]; a2 = [4, 7]; }
-      else { [x, y] = matePos(mateTotal - (u - 3 - T) * 22); f = -1; lg = 1 + (Math.floor(t * 5) % 2); bob = Math.floor(t * 5) % 2; a1 = [2, 7]; a2 = [-2, 4 + Math.sin(t * 9) * 3]; }
-      if (u >= 1.5 + T && u < 3 + T + 2) chest(241, 117);
-      person(x, y, L, { f, legs: lg, bob, a1, a2 });
-      if (carry) chest(x - 5, y - 31);
-      if (u < 1.5) chest(x + 4, y - 7);
-      return [x, y - (carry ? 36 : 28)];
-    },
-    // 2 Quartermaster: writes in the ledger, counts coins
-    (t, L) => {
-      const w = Math.sin(t * 6) * 1.2;
-      person(126, 147, L, { f: -1, legs: 3, bob: Math.floor(t * 1.5) % 2, a1: [-6 + w, 4], a2: [-3, 5], noShadow: true });
-      return [126, 124];
-    },
-    // 3 Bosun: hammers a patch onto the hull
-    (t, L) => {
-      const p = (t * 1.25) % 1, hit = p > .68 && p < .78;
-      const a1 = p < .68 ? [3, -9 + p * 4] : [9, -3];
-      const o = person(274, 138, L, { f: 1, a1, a2: [3, 2], noShadow: true });
-      const [hx, hy] = o.h1;
-      line(hx + 1, hy + 1, hx + (p < .68 ? 3 : 7), hy + (p < .68 ? -5 : 1), "#5a2f14");
-      r(hx + (p < .68 ? 2 : 6), hy + (p < .68 ? -7 : -1), 4, 3, "#9aa0aa");
-      if (hit) { r(284, 132, 1, 1, WHITE); r(285, 130, 1, 1, GOLD); r(286, 134, 1, 1, GOLD); r(283, 129, 1, 1, WHITE); }
-      return [274, 114];
-    },
-    // 4 Gunner: sharpens a cutlass on the grindstone
-    (t, L) => {
-      const jig = Math.sin(t * 9) * 1;
-      const o = person(177, 150, L, { f: 1, bob: Math.floor(t * 2) % 2, a1: [6, -2 + jig], a2: [4, -1] });
-      const [hx, hy] = o.h1;
-      line(hx, hy, hx + 6, hy + 5, "#c8ccd4"); line(hx, hy + 1, hx + 6, hy + 6, "#7a7e88");
-      const k = Math.floor(t * 12);
-      for (let i = 0; i < 4; i++) {
-        const q = jit(k * 4 + i), px = 184 + q * 6, py = 139 + jit(k + i * 9) * 6;
-        r(px, py, 1, 1, i % 2 ? WHITE : GOLD);
+    // captain at the wheel
+    add(116, () => {
+      const y = 116 + b, wx = 217, wy = y - 8, a = REDUCED ? 0 : T * 0.4;
+      R(c, wx, wy + 3, 2, 8, "#5a2f14");
+      for (let i = 0; i < 8; i++) {
+        const ang = a + i * Math.PI / 4;
+        L(c, wx, wy, wx + Math.cos(ang) * 6, wy + Math.sin(ang) * 6, "#c9a45a");
       }
-      return [177, 126];
-    },
-    // 5 Navigator: taps places on the chart with a pointer
-    (t, L) => {
-      const spots = [[88, 106], [108, 112], [100, 121], [96, 100]];
-      const s = spots[Math.floor(t / 1.8) % spots.length];
-      const o = person(96, 150, L, { f: 1, bob: Math.floor(t * 2) % 2, a1: [s[0] > 98 ? 4 : 0, -13], a2: [-3, 4] });
-      line(o.h1[0] + 1, o.h1[1], s[0], s[1], "#c9a45a");
-      r(s[0] - 1, s[1] - 1, 3, 3, "rgba(255,255,255,.45)");
-      return [96, 126];
-    },
-    // 6 Koki: stirs the cauldron
-    (t, L) => {
-      const o = person(143, 150, L, { f: 1, bob: Math.floor(t * 3) % 2, a1: [10, -2 + Math.sin(t * 4) * 2], a2: [-2, 6] });
-      line(o.h1[0], o.h1[1], o.h1[0] + 5, o.h1[1] + 5, "#8a5a2b"); r(o.h1[0] + 4, o.h1[1] + 5, 3, 2, "#c9ccd2");
-      return [143, 126];
-    },
-    // 7 Tukang kayu: saws a plank on the deck
-    (t, L) => {
-      const sw = Math.sin(t * 7) * 3;
-      const o = person(303, 124, L, { f: -1, legs: 0, bob: Math.floor(t * 7) % 2, a1: [-7 + sw, 4], a2: [-6 + sw, 5], noShadow: true });
-      r(o.h1[0] - 8, o.h1[1], 9, 1, "#c8ccd4"); r(o.h1[0] + 1, o.h1[1] - 1, 3, 3, "#5a2f14");
-      if (Math.floor(t * 7) % 3 === 0) { r(290, 119, 1, 1, "#e8d49a"); r(288, 121, 1, 1, "#e8d49a"); }
-      return [303, 100];
-    },
-    // 8 Pengintai: crow's nest with a spyglass, turns now and then
-    (t, L) => {
-      const f = Math.floor(t / 4) % 2 ? 1 : -1;
-      const o = person(268, 47, L, { f, bob: Math.floor(t * 1.5) % 2, a1: [4, -5], a2: [1, -3], noShadow: true });
-      line(o.h1[0], o.h1[1], o.h1[0] + 7 * f, o.h1[1] - 3, "#c9a45a"); r(o.h1[0] + 7 * f, o.h1[1] - 4, 2, 3, "#f2b632");
-      return [268, 20];
-    },
-    // 9 Kelasi: mops the floor in the foreground
-    (t, L) => {
-      const span = 100, sp = 14, u = (t * sp) % (span * 2), x = 22 + (u < span ? u : span * 2 - u), f = u < span ? 1 : -1;
-      const sw = Math.sin(t * 5) * 5;
-      const o = person(x, 172, L, { f, legs: 1 + (Math.floor(t * 4) % 2), bob: Math.floor(t * 4) % 2, a1: [5, 2], a2: [3, 0] });
-      line(o.h1[0], o.h1[1], x + f * (9 + sw), 171, "#8a5a2b");
-      r(x + f * (9 + sw) - 3, 170, 7, 3, "#cdd6d8");
-      return [x, 144];
-    }
-  ];
-
-  /* ================= frame ================= */
-  const stageEl = document.getElementById("stage");
-  const tagsEl = document.getElementById("tags");
-  const cardEl = document.getElementById("card");
-  const tagEls = [];
-  const tagPos = jobs.map(() => [0, 0]);
-
-  function frame(t) {
-    g = ctx;
-    ctx.drawImage(bgc, 0, 0);
-    beam(t); torches(t); lantern(t); sparkles(t); cauldron(t); grindstone(t); drips(t);
-
-    // seated and fixed crew go behind the table and nest front; the two walkers pass in front of them
-    [0, 5, 4, 6, 3, 7, 8, 2].forEach(i => { tagPos[i] = jobs[i](t, CREW[i]); });
-    ctx.drawImage(fgc, 0, 0);
-    [1, 9].forEach(i => { tagPos[i] = jobs[i](t, CREW[i]); });
-
-    // things lying on the table
-    r(115, 137, 11, 2, "#6b2a1a"); r(116, 136, 9, 1, "#f0e6c8");
-    const n = (Math.floor(t) % 4) + 1;
-    for (let k = 0; k < n; k++) r(109, 138 - k, 3, 1, GOLD);
-    r(113, 138, 2, 1, GOLD); r(113, 137, 2, 1, "#c98a14");
-
-    bats(t); water(t);
-    // pennant on the mast
-    const fl = Math.round(Math.sin(t * 5));
-    r(268, 28, 9, 4, "#111"); r(273 + fl, 29, 4, 2, "#111"); r(270, 29, 2, 1, WHITE);
-
-    tagEls.forEach((el, i) => {
-      el.style.left = (tagPos[i][0] / W * 100) + "%";
-      el.style.top = ((tagPos[i][1] + 16) / H * 100) + "%";
+      for (let i = 0; i < 16; i++) { const ang = i * Math.PI / 8; R(c, wx + Math.round(Math.cos(ang) * 5), wy + Math.round(Math.sin(ang) * 5), 1, 1, "#8a5a2b"); }
+      const point = !REDUCED && (T % 9) < 2.2;
+      person(c, 205, y, { ...LOOK.captain, dir: 1, hl: point ? [6, -7] : [-1, 4], hr: [8, 2] });
+      clampHit("captain", 205, y - 23, y);
     });
-    if (openIdx >= 0) placeCard(openIdx);
+    // navigator with map and telescope
+    add(116, () => {
+      const y = 116 + b, tele = !REDUCED && (T % 8) < 3;
+      R(c, 276, y - 6, 12, 2, "#a9753a"); R(c, 277, y - 4, 2, 4, "#5a2f14"); R(c, 285, y - 4, 2, 4, "#5a2f14");
+      R(c, 278, y - 8, 8, 2, "#f0dfb0"); R(c, 283, y - 8, 1, 1, "#c8372d"); R(c, 279, y - 7, 3, 1, "#8a5a2b");
+      person(c, 268, y, { ...LOOK.nav, dir: 1, hl: tele ? [3, -7] : [3, 1], hr: tele ? [4, -9] : [6, 3] });
+      if (tele) { L(c, 272 + 4, y - 19, 272 + 11, y - 21, "#c9a45a"); R(c, 272 + 11, y - 22, 2, 3, GOLD); }
+      clampHit("nav", 268, y - 23, y);
+    });
+    // lookout in the crow's nest
+    add(46, () => {
+      const y = 46 + b, d = REDUCED || Math.sin(T * 0.6) >= 0 ? 1 : -1;
+      person(c, 240, y, { ...LOOK.lookout, dir: d, hl: [d * 4, -4], hr: [d * 5, -5] });
+      L(c, 240 + d * 9, y - 15, 240 + d * 15, y - 16, "#c9a45a"); R(c, 240 + d * 15, y - 17, 1, 3, GOLD);
+      R(c, 232, y - 5, 17, 2, "#a9753a"); R(c, 233, y - 3, 15, 5, "#8a5a2b"); R(c, 233, y, 15, 1, "#5a2f14"); R(c, 233, y + 2, 15, 1, "#3d1f0c");
+      clampHit("lookout", 240, y - 24, y + 2);
+    });
+    // first mate hauling crates along the dock
+    add(131, () => {
+      const p = REDUCED ? 8 : (T * 9) % 64, right = p < 32, u = right ? p / 32 : 2 - p / 32;
+      const x = 124 + u * 32, st = REDUCED ? 0 : (Math.floor(T * 6) % 2 ? 1 : 2);
+      person(c, x, 131, { ...LOOK.mate, dir: right ? 1 : -1, step: st, hl: right ? [4, -3] : [-1, (st === 1 ? 5 : 3)], hr: right ? [3, -3] : [1, (st === 1 ? 3 : 5)] });
+      if (right) { R(c, x + 2, 131 - 14, 7, 6, "#c9a45a"); R(c, x + 2, 131 - 14, 7, 1, "#e0c27a"); R(c, x + 5, 131 - 14, 1, 6, "#8a6a2a"); }
+      clampHit("mate", x, 131 - 24, 131);
+    });
+    // quartermaster counting
+    add(131, () => {
+      const t = REDUCED ? 0 : Math.floor(T * 2.5) % 2;
+      person(c, 183, 131, { ...LOOK.qm, dir: -1, hl: [-4, -1], hr: [-3, -3 + t] });
+      R(c, 183 - 11, 131 - 13, 6, 7, "#f0dfb0"); R(c, 183 - 11, 131 - 13, 6, 1, "#8a5a2b");
+      R(c, 183 - 10, 131 - 11, 4, 1, "#8a7a5a"); R(c, 183 - 10, 131 - 9, 3, 1, "#8a7a5a");
+      clampHit("qm", 183, 131 - 22, 131);
+    });
+    // kid fishing
+    add(143, () => {
+      const dip = !REDUCED && (T % 6) > 5.1, bob = REDUCED ? 0 : Math.round(Math.sin(T * 2)) + (dip ? 2 : 0);
+      person(c, 126, 143, { ...LOOK.kid, dir: 1, hl: [3, 1], hr: [5, dip ? -5 : -4] });
+      const hx = 126 + 4 + 5, hy = 143 - 10 + (dip ? -5 : -4);
+      L(c, hx, hy, 143, 122, "#b27a3e");
+      L(c, 143, 122, 143, 146 + bob, "#f4f4ee");
+      R(c, 142, 145 + bob, 3, 2, "#c8372d"); R(c, 142, 145 + bob, 3, 1, "#fff");
+      if (!REDUCED) { const r = Math.floor(T * 2) % 3; R(c, 140 - r, 149, 2 + r * 2 + 2, 1, "rgba(255,255,255,.55)"); }
+      clampHit("kid", 126, 143 - 22, 143);
+    });
+    // cook stirring over the fire
+    add(150, () => {
+      const y = 150, f = REDUCED ? 0 : Math.floor(T * 8) % 3, a = REDUCED ? 0 : T * 4;
+      const hx = 48 + 6 + Math.round(Math.cos(a) * 1.5), hy = y - 10 + 5 + Math.round(Math.sin(a) * 1.5);
+      L(c, 60, y - 22, 55, y - 2, "#5a2f14"); L(c, 64, y - 22, 69, y - 2, "#5a2f14");
+      R(c, 57, y - 2, 11, 2, "#5a2f14"); R(c, 58, y - 3, 9, 1, "#3d1f0c");
+      R(c, 59, y - 8, 7, 6, "#e8561a"); R(c, 60, y - 11 + (f % 2), 5, 7, "#f2b632"); R(c, 61, y - 6, 3, 3, "#fff2b0");
+      if (f === 1) R(c, 62, y - 13, 1, 2, "#e8561a");
+      R(c, 57, y - 18, 11, 7, "#2a2a32"); R(c, 56, y - 19, 13, 2, "#4a4a56"); R(c, 58, y - 17, 3, 1, "#6a6a78");
+      R(c, 59, y - 20, 7, 1, "#c8863a");
+      person(c, 48, y, { ...LOOK.cook, dir: 1, hl: [1, 4], hr: [hx - 52, hy - (y - 10)] });
+      L(c, hx, hy, hx + 5, hy - 2, "#c9c9d0");
+      if (!REDUCED) for (let k = 0; k < 5; k++) {
+        const ph = (T * 0.8 + k * 0.2) % 1, px = 62 + Math.sin(T + k) * 3 + ph * 7, py = y - 24 - ph * 28, s = 2 + Math.floor(ph * 3);
+        R(c, px, py, s, s, "rgba(245,245,250," + (0.75 * (1 - ph)).toFixed(2) + ")");
+      }
+      clampHit("cook", 48, y - 25, y);
+    });
+    // carpenter hammering
+    add(166, () => {
+      const y = 166, ph = REDUCED ? 0 : (T * 1.6) % 1, up = ph < 0.7;
+      R(c, 91, y - 5, 14, 2, "#d8b06a"); R(c, 91, y - 5, 14, 1, "#ecd08e");
+      R(c, 93, y - 3, 2, 3, "#5a2f14"); R(c, 101, y - 3, 2, 3, "#5a2f14");
+      R(c, 108, y - 1, 2, 1, "#e8c88a"); R(c, 86, y, 1, 1, "#e8c88a"); R(c, 106, y + 1, 1, 1, "#e8c88a");
+      person(c, 84, y, { ...LOOK.carp, dir: 1, hl: [4, -2], hr: up ? [4, -7] : [8, -1] });
+      const hx = 84 + 4 + (up ? 4 : 8), hy = y - 10 + (up ? -7 : -1);
+      R(c, hx, hy - 4, 1, 5, "#8a5a2b"); R(c, hx - 1, hy - 6, 4, 2, "#8a8a96");
+      if (!up && ph < 0.78) { R(c, 96, y - 7, 1, 1, GOLD); R(c, 98, y - 8, 1, 1, "#fff2b0"); R(c, 94, y - 7, 1, 1, "#fff2b0"); }
+      clampHit("carp", 84, y - 24, y);
+    });
+    // gunner and cannon
+    add(172, () => {
+      const y = 172, ph = REDUCED ? 0 : T % 8, load = ph > 5.2 && ph < 6;
+      R(c, 114, y - 5, 12, 2, "#5a2f14");
+      R(c, 116, y - 8, 7, 5, "#2a2a32"); R(c, 122, y - 9, 6, 5, "#2a2a32"); R(c, 127, y - 10, 5, 5, "#2a2a32");
+      R(c, 116, y - 8, 7, 1, "#4a4a56"); R(c, 122, y - 9, 6, 1, "#4a4a56"); R(c, 127, y - 10, 5, 1, "#4a4a56");
+      for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; R(c, 119 + Math.round(Math.cos(a) * 4), y - 4 + Math.round(Math.sin(a) * 4), 1, 1, "#8a5a2b"); }
+      R(c, 119, y - 4, 1, 1, "#8a5a2b");
+      person(c, 108, y, { ...LOOK.gunner, dir: 1, hl: [2, 4], hr: load ? [6, -3] : [1, 4] });
+      if (ph >= 6 && ph < 6.25) R(c, 132, y - 14, 5, 6, "#fff2b0");
+      if (ph >= 6 && ph < 7.8) for (let i = 0; i < 4; i++) {
+        const q = ph - 6;
+        R(c, 133 + q * 14 + i * 3, y - 10 - q * 5 - i, 2 + Math.floor(q * 3), 2 + Math.floor(q * 3), "rgba(232,232,236," + Math.max(0, 0.9 - q * 0.5).toFixed(2) + ")");
+      }
+      if (ph >= 6 && ph < 7.4) {
+        const u = (ph - 6) / 1.4;
+        R(c, 134 + u * 70, 162 + 8 * u - 100 * u * (1 - u), 3, 3, "#15151c");
+      } else if (ph >= 7.4) {
+        const q = ph - 7.4;
+        for (let i = 0; i < 4; i++) R(c, 204 + (i - 1.5) * 3 * (1 + q * 2), 170 - Math.sin(Math.min(1, q * 1.6) * Math.PI) * 8, 2, 2, "#e6f4ff");
+      }
+      clampHit("gunner", 108, y - 24, y);
+    });
+    // treasure sparkle
+    add(163, () => {
+      const t = REDUCED ? 0 : T % 3;
+      if (t < 0.5) { R(c, 12, 144, 1, 5, "#fff"); R(c, 10, 146, 5, 1, "#fff"); R(c, 11, 145, 3, 3, "rgba(255,240,170,.6)"); }
+    });
+    // parrot
+    add(260, () => {
+      const t = REDUCED ? 1.2 : T, px = 170 + 66 * Math.sin(t * 0.45), py = 64 + 10 * Math.sin(t * 0.9);
+      const d = Math.cos(t * 0.45) >= 0 ? 1 : -1;
+      parrot(c, px, py, d, REDUCED ? 0 : Math.floor(T * 8) % 2);
+      hits.parrot = { x0: px - 6, y0: py - 6, x1: px + 14, y1: py + 8 };
+    });
+
+    E.sort((a, b2) => a.y - b2.y).forEach(e => e.fn());
+
+    // marker over hovered / selected crew
+    [hoverId, selId].forEach((id, i) => {
+      const h = id && hits[id];
+      if (!h || (i === 1 && id === hoverId)) return;
+      const cx = Math.round((h.x0 + h.x1) / 2), bob = REDUCED ? 0 : Math.round(Math.sin(T * 5)), my = Math.max(1, Math.round(h.y0) - 7 + bob);
+      R(c, cx - 3, my - 1, 7, 1, DARK); R(c, cx - 2, my, 5, 1, DARK); R(c, cx - 1, my + 1, 3, 1, DARK); R(c, cx, my + 2, 1, 1, DARK);
+      R(c, cx - 2, my - 1, 5, 1, i ? "#c8372d" : GOLD); R(c, cx - 1, my, 3, 1, i ? "#c8372d" : GOLD); R(c, cx, my + 1, 1, 1, i ? "#c8372d" : GOLD);
+    });
   }
 
-  /* ================= tags, card, roster ================= */
-  let openIdx = -1;
-  const label = (d, i) => d.p ? "Repo private #" + (i + 1) : d.n;
+  /* ================= portraits & dialogue ================= */
+  function portrait(canvas, id) {
+    const c = canvas.getContext("2d");
+    c.clearRect(0, 0, canvas.width, canvas.height);
+    const crew = byId[id];
+    if (!crew.look) { parrot(c, 6, 14, 1, 0, true); return; }
+    person(c, 12, 24, { ...LOOK[crew.look], dir: 1, hl: [-1, 4], hr: [1, 4] });
+  }
 
-  function fillCard(i) {
-    const d = crewData[i], L = CREW[i];
-    cardEl.textContent = "";
-    const rk = document.createElement("p"); rk.className = "r"; rk.textContent = "#" + (i + 1) + " " + L.t;
-    const h = document.createElement("h2"); h.textContent = label(d, i);
-    const job = document.createElement("p"); job.textContent = L.job + ".";
-    const ds = document.createElement("p"); ds.textContent = d.d;
-    const c = document.createElement("p"); c.className = "c"; c.textContent = d.c.toLocaleString("id-ID") + " COMMIT" + (d.a ? " · PENSIUN" : "");
-    cardEl.append(rk, h, job, ds, c);
-    if (!d.p) {
-      const a = document.createElement("a"); a.href = "https://github.com/megawan/" + encodeURIComponent(d.n); a.textContent = "Buka di GitHub";
-      cardEl.append(a);
+  const faceCv = document.getElementById("face");
+  const dRank = document.getElementById("d-rank"), dWho = document.getElementById("d-who"), dSay = document.getElementById("d-say"), dGo = document.getElementById("d-go");
+  let typer = 0;
+  function type(text) {
+    clearInterval(typer);
+    if (REDUCED) { dSay.textContent = text; return; }
+    let i = 0; dSay.textContent = "";
+    typer = setInterval(() => { dSay.textContent = text.slice(0, ++i); if (i >= text.length) clearInterval(typer); }, 18);
+  }
+  function welcome() {
+    portrait(faceCv, "captain");
+    dRank.textContent = "SELAMAT DATANG"; dWho.textContent = "Ahoy, pendatang!"; dGo.hidden = true;
+    dSay.textContent = "Ini pulau kecil milik megawan. Klik salah satu awak kapal di gambar atau pilih dari daftar di bawah untuk berkenalan.";
+  }
+  function select(id) {
+    const c = byId[id]; if (!c) return;
+    selId = id;
+    portrait(faceCv, id);
+    dRank.textContent = c.rank; dWho.textContent = c.name;
+    if (c.link) { dGo.hidden = false; dGo.href = c.link[0]; dGo.textContent = c.link[1].toUpperCase(); } else dGo.hidden = true;
+    type(c.say);
+    document.querySelectorAll("#roster button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.id === id)));
+    if (REDUCED) draw(0);
+  }
+
+  /* ================= roster ================= */
+  const roster = document.getElementById("roster");
+  CREW.forEach(c => {
+    const li = document.createElement("li"), b = document.createElement("button");
+    b.type = "button"; b.dataset.id = c.id; b.setAttribute("aria-pressed", "false");
+    const cvs = document.createElement("canvas"); cvs.width = 24; cvs.height = 26; cvs.setAttribute("aria-hidden", "true");
+    const t = document.createElement("span");
+    t.innerHTML = '<span class="r"></span><span class="n"></span><span class="j"></span>';
+    t.children[0].textContent = c.rank; t.children[1].textContent = c.name; t.children[2].textContent = c.job;
+    b.append(cvs, t); li.append(b); roster.append(li);
+    portrait(cvs, c.id);
+    b.addEventListener("click", () => {
+      select(c.id);
+      document.getElementById("frame").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "center" });
+    });
+  });
+
+  /* ================= interaction ================= */
+  function pick(e) {
+    const r = cv.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
+    let best = null, bd = 1e9;
+    for (const id in hits) {
+      const h = hits[id];
+      if (x >= h.x0 - 2 && x <= h.x1 + 2 && y >= h.y0 - 2 && y <= h.y1 + 2) {
+        const d = Math.abs(x - (h.x0 + h.x1) / 2) + Math.abs(y - (h.y0 + h.y1) / 2);
+        if (d < bd) { bd = d; best = id; }
+      }
     }
+    return best;
   }
-  function placeCard(i) {
-    const [x, y] = tagPos[i], px = x / W, py = y / H;
-    cardEl.style.left = (px * 100) + "%";
-    cardEl.style.top = (py * 100) + "%";
-    const tx = px > .68 ? "-100%" : px < .32 ? "0" : "-50%";
-    const ty = py > .5 ? "calc(-100% - 18px)" : "18px";
-    cardEl.style.transform = "translate(" + tx + "," + ty + ")";
-  }
-  function show(i) {
-    openIdx = i; fillCard(i); cardEl.hidden = false; placeCard(i);
-    tagEls.forEach((el, k) => el.setAttribute("aria-expanded", String(k === i)));
-  }
-  function hide() { openIdx = -1; cardEl.hidden = true; tagEls.forEach(el => el.setAttribute("aria-expanded", "false")); }
-
-  crewData.forEach((d, i) => {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "tag";
-    b.setAttribute("aria-label", "#" + (i + 1) + " " + CREW[i].t + ", " + label(d, i));
-    b.setAttribute("aria-expanded", "false");
-    b.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") show(i); });
-    b.addEventListener("click", () => openIdx === i ? hide() : show(i));
-    tagsEl.append(b); tagEls.push(b);
+  cv.addEventListener("pointermove", e => {
+    const id = pick(e);
+    if (id !== hoverId) { hoverId = id; cv.classList.toggle("hit", !!id); if (REDUCED) draw(0); }
   });
-  stageEl.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") hide(); });
-  addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
-  document.addEventListener("click", e => { if (!stageEl.contains(e.target)) hide(); });
+  cv.addEventListener("pointerleave", () => { hoverId = null; cv.classList.remove("hit"); if (REDUCED) draw(0); });
+  cv.addEventListener("click", e => { const id = pick(e); if (id) select(id); });
 
-  // Roster: a small idle portrait for each crew member
-  const rosterEl = document.getElementById("roster");
-  const maxC = crewData[0].c;
-  crewData.forEach((d, i) => {
-    const L = CREW[i];
-    const li = document.createElement("li"); li.className = "row";
-    const rk = document.createElement("span"); rk.className = "rk"; rk.textContent = "#" + (i + 1) + " " + L.t;
-    const cv = document.createElement("canvas"); cv.width = 24; cv.height = 28; cv.setAttribute("aria-hidden", "true");
-    g = cv.getContext("2d"); person(12, 26, L, { f: 1, noShadow: true }); g = ctx;
+  // whole-number scaling on wide screens keeps pixels crisp
+  const frame = document.getElementById("frame");
+  function fit() {
+    const w = document.querySelector(".wrap").clientWidth;
+    if (!w) { cv.style.width = ""; return; }
+    const avail = Math.min(980, w) - 28;
+    const k = avail >= 640 ? Math.floor(avail / 320) : Math.max(0.5, avail / 320);
+    cv.style.width = Math.floor(320 * k) + "px";
+  }
+  addEventListener("resize", fit); addEventListener("load", fit); fit();
 
-    const info = document.createElement("div");
-    const h = document.createElement("h3");
-    if (d.p) h.textContent = "Repo private";
-    else { const a = document.createElement("a"); a.href = "https://github.com/megawan/" + encodeURIComponent(d.n); a.textContent = d.n; h.append(a); }
-    const job = document.createElement("p"); job.className = "job"; job.textContent = L.job + ".";
-    info.append(h, job);
-
-    const meta = document.createElement("div"); meta.className = "meta";
-    const bar = document.createElement("div"); bar.className = "bar"; bar.setAttribute("aria-hidden", "true");
-    const on = Math.max(1, Math.round(Math.sqrt(d.c / maxC) * 20));
-    for (let k = 0; k < 20; k++) { const s = document.createElement("i"); if (k < on) s.className = "on"; bar.append(s); }
-    const cnt = document.createElement("div"); cnt.className = "count";
-    const c1 = document.createElement("span"); c1.textContent = d.c.toLocaleString("id-ID") + " COMMIT";
-    const c2 = document.createElement("span"); c2.textContent = [d.l, d.a ? "PENSIUN" : ""].filter(Boolean).join(" · ");
-    cnt.append(c1, c2);
-    meta.append(bar, cnt);
-
-    li.append(rk, cv, info, meta);
-    rosterEl.append(li);
-  });
-
-  /* ================= go ================= */
-  buildBG();
-  g = ctx;
-  frame(REDUCED ? 3 : 0);
+  /* ================= start ================= */
+  welcome();
+  draw(0);
   if (!REDUCED) {
     let last = 0;
-    const loop = ms => {
-      if (ms - last > 1000 / 30) { last = ms; frame(ms / 1000); }
+    const loop = ts => {
+      if (ts - last >= 33) { last = ts; draw(ts / 1000); }
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
