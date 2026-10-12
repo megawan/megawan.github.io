@@ -20,3 +20,7 @@ Rekaman ada di `audio/` (112 file mp3 kecil). Dibuat dengan suara Arab bawaan ma
 NN adalah nomor huruf 01 sampai 28 (01 alif, 02 ba, 03 ta, dst). Untuk pelafalan yang lebih baik, ganti file mana pun dengan rekaman sendiri dengan nama yang sama.
 
 Jika file tidak ditemukan, game memakai suara bahasa Arab bawaan perangkat sebagai cadangan.
+
+## Huruf mirip
+
+Menu "Huruf mirip" mengelompokkan huruf yang bentuknya hampir sama dan hanya berbeda pada titiknya (misalnya ب ت ث, ج ح خ, ص ض). Setiap kelompok punya kartu penjelasan titik dan latihan 8 soal. Kelompok didefinisikan di konstanta `GROUPS` dan `DOTS` pada `index.html`.
