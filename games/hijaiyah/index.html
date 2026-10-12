@@ -38,6 +38,11 @@
   .tile .ar { font-size: 2.6rem; display: block; }
   .tile small { display: block; font-size: .8rem; opacity: .75; }
   .tile.on { border-color: var(--accent); background: #e8f8f0; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tab { flex: 1; font: inherit; font-weight: 700; font-size: 1rem; padding: 8px 4px; min-height: 48px;
+    background: var(--card); color: inherit; border: 2px solid var(--line); border-radius: 14px; cursor: pointer; }
+  .tab.on { background: var(--accent); border-color: var(--accent-d); color: #fff; }
+  .tab .ar { font-size: 1.5rem; display: block; line-height: 1.1; }
 
   .stage { background: var(--card); border: 2px solid var(--line); border-radius: var(--radius);
     padding: 16px; text-align: center; margin-bottom: 14px; }
@@ -71,12 +76,15 @@
       <button class="btn" id="goLearn" type="button">Belajar</button>
       <button class="btn alt" id="goHear" type="button">Tebak dari suara</button>
       <button class="btn alt" id="goSee" type="button">Tebak nama huruf</button>
+      <button class="btn" id="goHarakat" type="button">Belajar harakat</button>
+      <button class="btn alt" id="goHarQuiz" type="button">Tebak harakat</button>
     </div>
-    <p class="note" id="voiceNote" hidden>Perangkat ini belum punya suara bahasa Arab. Lihat catatan di README game ini untuk menambahkan rekaman suara.</p>
+    <p class="note" id="voiceNote" hidden>Suara tidak bisa diputar di perangkat ini. Coba periksa volume dan mode senyap.</p>
   </section>
 
   <section id="learn" hidden>
     <div class="bar"><button class="btn ghost" data-home type="button">Kembali</button></div>
+    <div class="tabs" id="tabs"></div>
     <div class="stage">
       <div class="big ar" id="lBig">ا</div>
       <div class="name" id="lName">Alif</div>
@@ -129,6 +137,23 @@
     ['ي', 'ياء', 'Ya', 'ya']
   ].map((r, i) => ({ ch: r[0], say: r[1], name: r[2], file: String(i + 1).padStart(2, '0') + '-' + r[3] + '.mp3' }));
 
+  // Harakat: 0 = plain letter, then fathah, kasrah, dammah.
+  const MARKS = [
+    { key: '', mark: '', title: 'Huruf', vowel: '' },
+    { key: 'fathah', mark: '\u064E', title: 'Fathah', vowel: 'a' },
+    { key: 'kasrah', mark: '\u0650', title: 'Kasrah', vowel: 'i' },
+    { key: 'dammah', mark: '\u064F', title: 'Dammah', vowel: 'u' }
+  ];
+  const SYL = ['', 'b', 't', 'ts', 'j', 'h', 'kh', 'd', 'dz', 'r', 'z', 's', 'sy', 'sh', 'dh', 'th', 'zh',
+               "'", 'gh', 'f', 'q', 'k', 'l', 'm', 'n', 'w', 'h', 'y'];
+  // The item to display and speak for letter index i under harakat h.
+  function form(i, h) {
+    const l = LETTERS[i], m = MARKS[h];
+    if (h === 0) return l;
+    const base = i === 0 ? (h === 2 ? '\u0625' : '\u0623') : l.ch;
+    return { ch: base + m.mark, say: base + m.mark, name: SYL[i] + m.vowel, file: l.file.slice(0, 2) + '-' + m.key + '.mp3' };
+  }
+
   const $ = (id) => document.getElementById(id);
   const sections = ['home', 'learn', 'quiz', 'result'].map($);
   function show(id) { sections.forEach((s) => { s.hidden = s.id !== id; }); window.scrollTo(0, 0); }
@@ -161,63 +186,99 @@
   if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.addEventListener('voiceschanged', pickVoice); }
   else { $('voiceNote').hidden = false; }
 
-  let current = null;
-  function speak(letter) {
+  let current = null, token = 0;
+  function speak(item) {
+    const my = ++token;
     if (current) { current.pause(); current = null; }
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     const fallback = () => {
-      if (!('speechSynthesis' in window)) return;
-      const u = new SpeechSynthesisUtterance(letter.say);
-      u.lang = 'ar-SA'; if (arVoice) u.voice = arVoice; u.rate = 0.7;
-      speechSynthesis.speak(u);
+      if (my !== token || !('speechSynthesis' in window)) return;
+      // A short delay after cancel() avoids dropped utterances in some browsers.
+      setTimeout(() => {
+        const u = new SpeechSynthesisUtterance(item.say);
+        u.lang = 'ar-SA'; if (arVoice) u.voice = arVoice; u.rate = 0.7;
+        speechSynthesis.speak(u);
+      }, 60);
     };
-    const a = new Audio('audio/' + letter.file);
+    const a = new Audio('audio/' + item.file);
     current = a;
     a.addEventListener('error', fallback, { once: true });
-    a.play().catch(fallback);
+    const p = a.play();
+    if (p && p.catch) p.catch((e) => { if (!a.error && e && e.name === 'NotAllowedError') return; fallback(); });
   }
-
   // ---- Learn ----
-  let learnIdx = 0;
+  let learnIdx = 0, learnH = 0;
   function renderLearn() {
-    const l = LETTERS[learnIdx];
-    $('lBig').textContent = l.ch; $('lName').textContent = l.name;
-    [...$('grid').children].forEach((t, i) => t.classList.toggle('on', i === learnIdx));
+    const f = form(learnIdx, learnH);
+    $('lBig').textContent = f.ch; $('lName').textContent = f.name;
+    [...$('tabs').children].forEach((t, i) => t.classList.toggle('on', i === learnH));
+    [...$('grid').children].forEach((t, i) => {
+      const g = form(i, learnH);
+      t.firstChild.textContent = g.ch; t.lastChild.textContent = g.name;
+      t.setAttribute('aria-label', g.name);
+      t.classList.toggle('on', i === learnIdx);
+    });
   }
+  MARKS.forEach((m, h) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tab';
+    b.innerHTML = '<span class="ar" lang="ar"></span><small></small>';
+    b.firstChild.textContent = h === 0 ? 'ب' : 'ب' + m.mark; b.lastChild.textContent = m.title;
+    b.addEventListener('click', () => { learnH = h; renderLearn(); speak(form(learnIdx, learnH)); });
+    $('tabs').appendChild(b);
+  });
   LETTERS.forEach((l, i) => {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'tile';
-    b.setAttribute('aria-label', l.name);
     b.innerHTML = '<span class="ar" lang="ar"></span><small></small>';
-    b.firstChild.textContent = l.ch; b.lastChild.textContent = l.name;
-    b.addEventListener('click', () => { learnIdx = i; renderLearn(); speak(l); });
+    b.addEventListener('click', () => { learnIdx = i; renderLearn(); speak(form(i, learnH)); });
     $('grid').appendChild(b);
   });
-  $('lPlay').addEventListener('click', () => speak(LETTERS[learnIdx]));
+  $('lPlay').addEventListener('click', () => speak(form(learnIdx, learnH)));
 
   // ---- Quiz ----
   const ROUNDS = 10;
-  let mode = 'hear', order = [], qi = 0, score = 0, wrongThis = false, answer = null;
+  let mode = 'hear', order = [], qi = 0, score = 0, wrongThis = false, answer = null, qKind = 'hear';
 
   function shuffle(a) {
     for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
     return a;
   }
   function startQuiz(m) {
-    mode = m; order = shuffle(LETTERS.slice()).slice(0, ROUNDS); qi = 0; score = 0;
+    mode = m; qi = 0; score = 0;
+    if (m === 'harakat') {
+      // Pick a letter and a vowel for each round; options are the three vowels of that letter.
+      order = shuffle(LETTERS.map((_, i) => i)).slice(0, ROUNDS).map((i) => ({ i, h: 1 + Math.floor(Math.random() * 3) }));
+    } else {
+      order = shuffle(LETTERS.slice()).slice(0, ROUNDS);
+    }
     $('prog').innerHTML = order.map(() => '<i></i>').join('');
     show('quiz'); nextQ();
   }
   function nextQ() {
-    answer = order[qi]; wrongThis = false;
+    wrongThis = false;
     [...$('prog').children].forEach((p, i) => p.classList.toggle('done', i < qi));
-    const choices = shuffle([answer].concat(shuffle(LETTERS.filter((l) => l !== answer)).slice(0, 3)));
-    const hear = mode === 'hear';
+    let choices, hear, label;
+    if (mode === 'harakat') {
+      const q = order[qi];
+      answer = form(q.i, q.h);
+      qKind = Math.random() < 0.5 ? 'hear' : 'see';
+      hear = qKind === 'hear';
+      choices = [1, 2, 3].map((h) => form(q.i, h));
+      if (!hear) choices = choices.map((c) => ({ ch: c.name, say: c.say, name: c.name, file: c.file, text: true }));
+      label = hear ? 'Harakat apa yang kamu dengar?' : 'Bagaimana cara membaca ini?';
+    } else {
+      answer = order[qi];
+      hear = mode === 'hear';
+      choices = shuffle([answer].concat(shuffle(LETTERS.filter((l) => l !== answer)).slice(0, 3)));
+      label = hear ? 'Huruf apa yang kamu dengar?' : 'Apa nama huruf ini?';
+    }
     $('qBig').textContent = hear ? '' : answer.ch;
     $('qBig').hidden = hear;
-    $('qPrompt').textContent = hear ? 'Huruf apa yang kamu dengar?' : 'Apa nama huruf ini?';
+    $('qPrompt').textContent = label;
     $('qPlay').hidden = !hear;
     $('opts').innerHTML = '';
+    $('opts').style.gridTemplateColumns = choices.length === 3 ? 'repeat(3, 1fr)' : '';
     choices.forEach((c) => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'opt';
@@ -230,10 +291,10 @@
   }
   function pick(btn, c) {
     if (btn.classList.contains('ok')) return;
-    if (c === answer) {
+    if (c.name === answer.name && c.say === answer.say) {
       btn.classList.add('ok'); sfx.good();
       if (!wrongThis) score++;
-      if (mode === 'see') speak(answer);
+      if (qKind === 'see' || mode === 'see') speak(answer);
       qi++;
       setTimeout(() => (qi < order.length ? nextQ() : finish()), 900);
     } else {
@@ -252,7 +313,9 @@
   $('again').addEventListener('click', () => startQuiz(mode));
 
   // ---- Navigation ----
-  $('goLearn').addEventListener('click', () => { audioCtx(); show('learn'); renderLearn(); });
+  $('goLearn').addEventListener('click', () => { audioCtx(); learnH = 0; show('learn'); renderLearn(); });
+  $('goHarakat').addEventListener('click', () => { audioCtx(); learnH = 1; show('learn'); renderLearn(); });
+  $('goHarQuiz').addEventListener('click', () => { audioCtx(); startQuiz('harakat'); });
   $('goHear').addEventListener('click', () => { audioCtx(); startQuiz('hear'); });
   $('goSee').addEventListener('click', () => { audioCtx(); startQuiz('see'); });
   document.querySelectorAll('[data-home]').forEach((b) => b.addEventListener('click', () => {

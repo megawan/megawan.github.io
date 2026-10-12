@@ -1,14 +1,22 @@
 # Belajar Huruf Hijaiyah
 
-Game sederhana untuk mengenal 28 huruf hijaiyah. Tiga mode: belajar, tebak dari suara, tebak nama huruf.
+Game sederhana untuk mengenal 28 huruf hijaiyah dan harakatnya. Mode:
+
+- Belajar: ketuk huruf untuk melihat dan mendengar namanya.
+- Belajar harakat: tab Fathah, Kasrah, Dammah menampilkan dan membunyikan tiap huruf dengan harakat.
+- Tebak dari suara, Tebak nama huruf, Tebak harakat.
 
 ## Suara
 
-Game mencoba memutar rekaman di `audio/` lebih dulu. Jika file tidak ada, game memakai suara bahasa Arab bawaan perangkat (speech synthesis).
+Rekaman ada di `audio/` (112 file mp3 kecil). Dibuat dengan suara Arab bawaan macOS (Majed).
 
-Untuk kualitas terbaik, tambahkan rekaman sendiri dengan nama file berikut di `games/hijaiyah/audio/`:
+| Pola nama file | Isi |
+| --- | --- |
+| `NN-nama.mp3`, mis. `02-ba.mp3` | nama huruf |
+| `NN-fathah.mp3` | huruf dengan fathah (ba) |
+| `NN-kasrah.mp3` | huruf dengan kasrah (bi) |
+| `NN-dammah.mp3` | huruf dengan dammah (bu) |
 
-`01-alif.mp3`, `02-ba.mp3`, `03-ta.mp3`, `04-tsa.mp3`, `05-jim.mp3`, `06-ha.mp3`, `07-kho.mp3`,
-`08-dal.mp3`, `09-dzal.mp3`, `10-ra.mp3`, `11-zai.mp3`, `12-sin.mp3`, `13-syin.mp3`, `14-shad.mp3`,
-`15-dhad.mp3`, `16-tho.mp3`, `17-zho.mp3`, `18-ain.mp3`, `19-ghain.mp3`, `20-fa.mp3`, `21-qaf.mp3`,
-`22-kaf.mp3`, `23-lam.mp3`, `24-mim.mp3`, `25-nun.mp3`, `26-wau.mp3`, `27-ha2.mp3`, `28-ya.mp3`
+NN adalah nomor huruf 01 sampai 28 (01 alif, 02 ba, 03 ta, dst). Untuk pelafalan yang lebih baik, ganti file mana pun dengan rekaman sendiri dengan nama yang sama.
+
+Jika file tidak ditemukan, game memakai suara bahasa Arab bawaan perangkat sebagai cadangan.
