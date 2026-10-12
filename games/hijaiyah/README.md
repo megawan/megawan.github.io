@@ -10,6 +10,7 @@ A small game for children to learn the 28 hijaiyah letters and their harakat.
 - Look-alikes: groups of letters that differ only by dots, with a short practice for each group.
 - Letter shapes: shows each letter alone and at the beginning, middle and end of a word, with a quiz. Letters that do not join to the next one (alif, dal, dzal, ra, zai, wau) only show two shapes. Shapes are drawn with a zero-width joiner, so they depend on the font's joining rules.
 - Match pairs: flip cards to match each letter with its name (easy, medium, hard).
+- My stickers: 12 stickers unlock as the total star count grows (thresholds in the `STICKERS` constant). Stars are kept even when progress is reset.
 - Progress map: shows how well each letter is known. Weak letters appear more often in quizzes.
 
 ## Sound
