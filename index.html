@@ -245,8 +245,8 @@
     // arms behind the torso edge: far arm first
     const sy = yb - 21;
     const far = [X + (f > 0 ? -6 : 4), sy], near = [X + (f > 0 ? 4 : -6), sy];
-    const hf = [far[0] + (o.a2 || [-1, 6])[0] * S * f, far[1] + (o.a2 || [-1, 6])[1] * S];
-    const hn = [near[0] + (o.a1 || [1, 6])[0] * S * f, near[1] + (o.a1 || [1, 6])[1] * S];
+    const hf = [Math.round(far[0] + (o.a2 || [-1, 6])[0] * S * f), Math.round(far[1] + (o.a2 || [-1, 6])[1] * S)];
+    const hn = [Math.round(near[0] + (o.a1 || [1, 6])[0] * S * f), Math.round(near[1] + (o.a1 || [1, 6])[1] * S)];
     const arm = (s0, h0, c) => {
       const x0 = s0[0], y0 = s0[1], x1 = h0[0], y1 = h0[1];
       const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sY = y0 < y1 ? 1 : -1;
