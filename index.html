@@ -4,45 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>megawan · Pulau Bajak Laut</title>
-<meta name="description" content="Pulau bajak laut bergaya pixel ala Stardew Valley. Kapten dan kru kapal punya tugas masing-masing; klik untuk berkenalan.">
-<meta name="theme-color" content="#8accf6">
+<meta name="description" content="Pulau bajak laut bergaya pixel ala Stardew Valley: kapten dan kru kapal bekerja di pelabuhan kecil.">
+<meta name="theme-color" content="#2a74bd">
 <style>
   html, body { height: 100%; margin: 0; overflow: hidden; }
-  /* sky above the horizon line, sea below: fills any letterbox around the canvas */
-  body { background: linear-gradient(#8accf6 48.9%, #3d9fe0 48.9%); }
-  #scene { position: fixed; left: 50%; top: 48.9%; transform: translate(-50%, -48.9%); display: block;
+  /* water above the shoreline, grass below: fills any letterbox around the canvas */
+  body { background: linear-gradient(#2a74bd 50%, #7fc64f 50%); }
+  #scene { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); display: block;
            image-rendering: pixelated; image-rendering: crisp-edges; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>
 </head>
 <body>
+
 <h1 class="sr">megawan · Pulau Bajak Laut</h1>
-<canvas id="scene" width="320" height="180" role="img"
-  aria-label="Pulau bajak laut bergaya pixel di siang hari: kapal bajak laut bersandar di dermaga, kapten di kemudi, dan kru yang sibuk bekerja."></canvas>
+<canvas id="scene" width="320" height="192" role="img"
+  aria-label="Pelabuhan bajak laut kecil bergaya pixel: kapal bersandar di dermaga, kapten dan kru berjalan, memasak, memalu, menembakkan meriam, dan memancing."></canvas>
 
 <script>
 (() => {
   "use strict";
-  const W = 320, H = 180, HOR = 88;
+  const W = 320, H = 192, SHORE = 96;
   const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* ================= crew ================= */
-  const LOOK = {
-    captain:  { hat: "tri",  hatc: "#1a1a2e", feather: 1, skull: 1, shirt: "#c8372d", pants: "#2a1c10", beard: "#2a1c10", coat: 1, patch: 1 },
-    mate:     { hat: "tri",  hatc: "#1d3a5c", shirt: "#2f6fb0", pants: "#2a1c10", beard: "#8a4a1a" },
-    nav:      { hat: "band", band: "#1f9d8a", hair: "#2a1c10", shirt: "#e8e2cc", pants: "#163a44", vest: "#1f9d8a" },
-    qm:       { hat: "none", hair: "#c9c9d0", shirt: "#7a4bb0", pants: "#3a2a4a", glasses: 1 },
-    lookout:  { hat: "band", band: "#f0dfb0", hair: "#c9742a", shirt: "#4aa84a", pants: "#2a4a2a" },
-    gunner:   { hat: "band", band: "#15151c", hair: "#15151c", shirt: "#4a4a52", pants: "#22222a", beard: "#2a1c10" },
-    cook:     { hat: "chef", shirt: "#f4f4ee", pants: "#3a3a40", apron: 1 },
-    carp:     { hat: "cap",  hatc: "#c9a45a", hair: "#5a2f14", shirt: "#8a5a2b", pants: "#3d1f0c", beard: "#6b3b1a" },
-    kid:      { hat: "cap",  hatc: "#2f6fb0", hair: "#5a2f14", shirt: "#e8eef0", stripes: "#2f6fb0", pants: "#1d3a5c" }
-  };
-
-  /* ================= drawing helpers ================= */
-  const SKIN = "#f2c28b", DARK = "#2a1c10", GOLD = "#f2b632";
+  /* ================= helpers ================= */
   const rnd = i => { const s = Math.sin(i * 12.9898 + 4.1) * 43758.5453; return s - Math.floor(s); };
-  const mk = () => { const c = document.createElement("canvas"); c.width = W; c.height = H; return c; };
+  const mkc = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
   const R = (c, x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), w, h); };
   function L(c, x0, y0, x1, y1, col) {
     x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
@@ -58,380 +45,611 @@
   }
   const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
   const lerp = (a, b, t) => { const A = hex(a), B = hex(b); return "rgb(" + A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(",") + ")"; };
+  const spr = (w, h, fn) => { const c = mkc(w, h), g = c.getContext("2d"); fn(g); return c; };
+  const shoreY = x => SHORE + Math.round(3 * Math.sin(x / 24) + 1.5 * Math.sin(x / 9));
+  const grassTop = x => shoreY(x) + 15 + Math.round(2 * Math.sin(x / 13 + 1));
+  const SKIN = "#f4c79a", DARK = "#2a1c10", GOLD = "#f2b632";
 
-  // A person is ~20 units tall and 9 wide. (x, y) = ground point between the feet.
-  // o.hl / o.hr are hand offsets from the left / right shoulder; o.step 0|1|2 lifts a foot.
+  /* ================= people ================= */
+  // ~20 units tall with a big head. (x, y) = ground point under the feet.
+  // dir: d u l r. step 0..3 = walk cycle. hl / hr = hand offsets from each shoulder.
   function person(c, x, y, o) {
     x = Math.round(x); y = Math.round(y);
-    const d = o.dir || 1, st = o.step || 0;
-    R(c, x - 4, y, 9, 1, "rgba(0,0,0,.22)");
+    const d = o.dir || "d", st = o.step || 0, u = st & 1 ? 1 : 0;
+    const hair = o.hair || "#5a2f14";
+    R(c, x - 5, y - 2, 11, 3, "rgba(0,20,0,.22)");
     // legs
-    R(c, x - 3, y - 5, 2, 3, o.pants); R(c, x + 2, y - 5, 2, 3, o.pants);
-    R(c, x - 3, y - 2 - (st === 1 ? 1 : 0), 2, 2, DARK); R(c, x + 2, y - 2 - (st === 2 ? 1 : 0), 2, 2, DARK);
-    // body
-    R(c, x - 3, y - 11, 7, 6, o.shirt);
-    if (o.stripes) for (let r = 0; r < 6; r += 2) R(c, x - 3, y - 11 + r, 7, 1, o.stripes);
-    if (o.apron) R(c, x - 2, y - 10, 5, 5, "#fff");
-    if (o.vest) { R(c, x - 3, y - 11, 2, 6, o.vest); R(c, x + 2, y - 11, 2, 6, o.vest); }
-    if (o.coat) { R(c, x, y - 11, 1, 5, "#fff3d0"); R(c, x - 1, y - 10, 1, 1, GOLD); R(c, x + 1, y - 8, 1, 1, GOLD); R(c, x - 3, y - 11, 7, 1, "#8a1f19"); }
-    R(c, x - 3, y - 6, 7, 1, DARK); R(c, x, y - 6, 1, 1, GOLD);
-    // head
-    R(c, x - 2, y - 16, 5, 5, SKIN);
-    const e1 = x + (d > 0 ? 0 : -2), e2 = x + (d > 0 ? 2 : 0);
-    R(c, e1, y - 14, 1, 1, DARK); R(c, e2, y - 14, 1, 1, DARK);
-    if (o.glasses) { R(c, e1 - 1, y - 15, 3, 1, "#c9c9d0"); R(c, e2 - 1, y - 15, 3, 1, "#c9c9d0"); }
-    if (o.patch) { R(c, d > 0 ? e2 : e1, y - 14, 1, 1, "#000"); R(c, x - 2, y - 15, 5, 1, "#000"); }
-    if (o.beard) { R(c, x - 2, y - 13, 5, 2, o.beard); R(c, x - 1, y - 11, 3, 1, o.beard); R(c, e1, y - 14, 1, 1, DARK); R(c, e2, y - 14, 1, 1, DARK); }
-    // headgear
-    if (o.hat === "tri") {
-      R(c, x - 4, y - 17, 9, 1, o.hatc); R(c, x - 2, y - 19, 5, 2, o.hatc); R(c, x - 1, y - 20, 3, 1, o.hatc);
-      R(c, x - 4, y - 17, 1, 1, GOLD); R(c, x + 4, y - 17, 1, 1, GOLD); R(c, x - 2, y - 17, 5, 1, GOLD);
-      if (o.skull) { R(c, x, y - 19, 1, 1, "#fff"); R(c, x - 1, y - 18, 3, 1, "#fff"); }
-      if (o.feather) { R(c, x + d * 3, y - 21, 1, 3, "#f4f4ee"); R(c, x + d * 4, y - 22, 1, 2, "#e0605a"); }
-    } else if (o.hat === "band") {
-      R(c, x - 2, y - 17, 5, 1, o.hair || "#5a2f14"); R(c, x - 2, y - 16, 5, 1, o.band);
-      R(c, x - d * 3, y - 16, 1, 2, o.band); R(c, x - d * 4, y - 14, 1, 1, o.band);
-    } else if (o.hat === "chef") {
-      R(c, x - 2, y - 17, 5, 1, "#fff"); R(c, x - 3, y - 20, 7, 3, "#fff"); R(c, x - 2, y - 21, 5, 1, "#fff");
-      R(c, x - 3, y - 18, 1, 1, "#dcdcdc"); R(c, x + 3, y - 19, 1, 1, "#dcdcdc");
-    } else if (o.hat === "cap") {
-      R(c, x - 2, y - 17, 5, 1, o.hair || "#5a2f14"); R(c, x - 3, y - 18, 7, 2, o.hatc); R(c, x - 2, y - 19, 5, 1, o.hatc);
-      R(c, x + d * 3 - (d > 0 ? 0 : 1), y - 16, 2, 1, o.hatc);
+    const side = d === "l" || d === "r", f = d === "r" ? 1 : -1;
+    if (side) {
+      const a = st === 1 ? 1 : st === 3 ? -1 : 0;
+      R(c, x - 2 + a * f, y - 5, 2, 3, o.pants); R(c, x + 0 - a * f, y - 5, 2, 3, o.pants);
+      R(c, x - 2 + a * f, y - 2, 3, 2, DARK); R(c, x + 0 - a * f, y - 2, 3, 2, DARK);
     } else {
-      R(c, x - 2, y - 17, 5, 2, o.hair || "#5a2f14"); R(c, x - 3, y - 15, 1, 2, o.hair || "#5a2f14"); R(c, x + 3, y - 15, 1, 2, o.hair || "#5a2f14");
+      R(c, x - 2, y - 5, 2, 3, o.pants); R(c, x, y - 5, 2, 3, o.pants);
+      R(c, x - 3, y - 2 - (st === 1 ? 1 : 0), 3, 2, DARK); R(c, x, y - 2 - (st === 3 ? 1 : 0), 3, 2, DARK);
     }
+    // torso
+    const ty = y - 11 + u;
+    R(c, x - 3, ty, 6, 6, o.shirt);
+    if (o.stripes) for (let r = 0; r < 6; r += 2) R(c, x - 3, ty + r, 6, 1, o.stripes);
+    if (o.apron && d !== "u") R(c, x - 2, ty + 1, 4, 5, "#fff");
+    if (o.vest) { R(c, x - 3, ty, 2, 6, o.vest); R(c, x + 1, ty, 2, 6, o.vest); }
+    if (o.coat && d !== "u") { R(c, x - 1, ty, 2, 6, "#fff3d0"); R(c, x - 1, ty + 1, 1, 1, GOLD); R(c, x, ty + 3, 1, 1, GOLD); R(c, x - 3, ty, 6, 1, "#8a1f19"); }
+    R(c, x - 3, ty + 5, 6, 1, DARK); R(c, x - 1, ty + 5, 2, 1, GOLD);
     // arms
     const hl = o.hl || [0, 4], hr = o.hr || [0, 4];
-    L(c, x - 4, y - 10, x - 4 + hl[0], y - 10 + hl[1], o.shirt); R(c, x - 4 + hl[0], y - 10 + hl[1], 1, 1, SKIN);
-    L(c, x + 4, y - 10, x + 4 + hr[0], y - 10 + hr[1], o.shirt); R(c, x + 4 + hr[0], y - 10 + hr[1], 1, 1, SKIN);
+    const arms = () => {
+      L(c, x - 4, ty + 1, x - 4 + hl[0], ty + 1 + hl[1], o.shirt); R(c, x - 4 + hl[0], ty + 1 + hl[1], 1, 1, SKIN);
+      L(c, x + 3, ty + 1, x + 3 + hr[0], ty + 1 + hr[1], o.shirt); R(c, x + 3 + hr[0], ty + 1 + hr[1], 1, 1, SKIN);
+    };
+    if (d !== "u") arms();
+    // head
+    const hy = y - 19 + u;
+    R(c, x - 4, hy, 8, 7, SKIN);
+    if (d === "u") {
+      R(c, x - 4, hy, 8, 6, hair); R(c, x - 3, hy + 6, 6, 1, hair);
+    } else if (d === "d") {
+      R(c, x - 4, hy, 8, 3, hair); R(c, x - 4, hy + 3, 1, 2, hair); R(c, x + 3, hy + 3, 1, 2, hair);
+      R(c, x - 2, hy + 3, 1, 2, DARK); R(c, x + 1, hy + 3, 1, 2, DARK);
+      R(c, x - 3, hy + 5, 1, 1, "#f0a090"); R(c, x + 2, hy + 5, 1, 1, "#f0a090");
+    } else {
+      R(c, x - 4, hy, 8, 3, hair);
+      if (d === "r") { R(c, x - 4, hy + 3, 4, 3, hair); R(c, x + 2, hy + 3, 1, 2, DARK); R(c, x + 4, hy + 4, 1, 1, SKIN); R(c, x + 2, hy + 5, 1, 1, "#f0a090"); }
+      else { R(c, x, hy + 3, 4, 3, hair); R(c, x - 3, hy + 3, 1, 2, DARK); R(c, x - 5, hy + 4, 1, 1, SKIN); R(c, x - 3, hy + 5, 1, 1, "#f0a090"); }
+    }
+    if (o.glasses && d === "d") { R(c, x - 3, hy + 2, 3, 1, "#c9c9d0"); R(c, x, hy + 2, 3, 1, "#c9c9d0"); }
+    if (o.patch && d === "d") { R(c, x + 1, hy + 3, 2, 2, "#000"); R(c, x - 4, hy + 2, 8, 1, "#000"); }
+    if (o.beard && d !== "u") { R(c, x - 3, hy + 5, 6, 2, o.beard); R(c, x - 2, hy + 7, 4, 1, o.beard); if (d === "d") R(c, x - 1, hy + 4, 2, 1, "#6b4a30"); }
+    // headgear
+    if (o.hat === "tri") {
+      R(c, x - 6, hy - 2, 12, 2, o.hatc); R(c, x - 4, hy - 5, 8, 3, o.hatc);
+      R(c, x - 6, hy - 2, 12, 1, GOLD); R(c, x - 6, hy - 3, 1, 1, GOLD); R(c, x + 5, hy - 3, 1, 1, GOLD);
+      if (o.skull) { R(c, x - 1, hy - 5, 2, 2, "#fff"); }
+      if (o.feather) { R(c, x + 3, hy - 7, 1, 3, "#f4f4ee"); R(c, x + 4, hy - 8, 1, 2, "#e0605a"); }
+    } else if (o.hat === "band") {
+      R(c, x - 4, hy + 1, 8, 2, o.band);
+      if (d === "l") R(c, x + 4, hy + 1, 2, 3, o.band); else R(c, x - 6, hy + 1, 2, 3, o.band);
+    } else if (o.hat === "chef") {
+      R(c, x - 4, hy - 1, 8, 2, "#fff"); R(c, x - 5, hy - 5, 10, 4, "#fff"); R(c, x - 3, hy - 7, 6, 2, "#fff");
+      R(c, x - 5, hy - 3, 1, 1, "#dcdcdc"); R(c, x + 4, hy - 4, 1, 1, "#dcdcdc");
+    } else if (o.hat === "cap") {
+      R(c, x - 4, hy - 2, 8, 4, o.hatc); R(c, x - 3, hy - 3, 6, 1, o.hatc);
+      if (d === "d") R(c, x - 4, hy + 2, 8, 1, "#1a1008"); else if (d === "r") R(c, x + 3, hy + 1, 3, 1, "#1a1008"); else if (d === "l") R(c, x - 6, hy + 1, 3, 1, "#1a1008");
+    } else {
+      R(c, x - 5, hy + 1, 1, 3, hair); R(c, x + 4, hy + 1, 1, 3, hair); R(c, x - 4, hy - 1, 8, 1, hair);
+    }
+    if (d === "u") arms();
   }
 
-  function parrot(c, x, y, d, f, big) {
-    x = Math.round(x); y = Math.round(y);
-    const s = big ? 2 : 1;
-    R(c, x - d * 4 * s - (d > 0 ? 0 : -s), y + s, 4 * s, s, "#2f6fb0");          // tail
-    R(c, x, y, 5 * s, 3 * s, "#d8312a");                                         // body
-    R(c, x + (d > 0 ? 5 : -2) * s, y - s, 3 * s, 3 * s, "#d8312a");               // head
-    R(c, x + (d > 0 ? 8 : -3) * s, y, s, s, GOLD);                               // beak
-    R(c, x + (d > 0 ? 6 : -1) * s, y - s, s, s, "#fff");                         // eye
-    R(c, x + 1 * s, y + (f ? -2 * s : 3 * s), 3 * s, 2 * s, "#2f6fb0");          // wing
-    R(c, x + 1 * s, y + (f ? -2 * s : 3 * s) + (f ? 0 : s), 3 * s, s, "#f2b632");
-  }
+  const LOOK = {
+    captain: { hat: "tri",  hatc: "#1a1a2e", feather: 1, skull: 1, shirt: "#c8372d", pants: "#2a1c10", beard: "#2a1c10", coat: 1, hair: "#2a1c10" },
+    mate:    { hat: "tri",  hatc: "#1d3a5c", shirt: "#2f6fb0", pants: "#2a1c10", beard: "#8a4a1a", hair: "#8a4a1a" },
+    nav:     { hat: "band", band: "#1f9d8a", hair: "#2a1c10", shirt: "#e8e2cc", pants: "#163a44", vest: "#1f9d8a" },
+    qm:      { hat: "none", hair: "#c9c9d0", shirt: "#7a4bb0", pants: "#3a2a4a", glasses: 1 },
+    lookout: { hat: "band", band: "#f0dfb0", hair: "#c9742a", shirt: "#4aa84a", pants: "#2a4a2a" },
+    gunner:  { hat: "band", band: "#15151c", hair: "#15151c", shirt: "#4a4a52", pants: "#22222a", beard: "#2a1c10" },
+    cook:    { hat: "chef", shirt: "#f4f4ee", pants: "#3a3a40", apron: 1, hair: "#5a2f14" },
+    carp:    { hat: "cap",  hatc: "#c9a45a", hair: "#5a2f14", shirt: "#8a5a2b", pants: "#3d1f0c", beard: "#6b3b1a" },
+    kid:     { hat: "cap",  hatc: "#2f6fb0", hair: "#5a2f14", shirt: "#e8eef0", stripes: "#2f6fb0", pants: "#1d3a5c" }
+  };
 
-  /* ================= static layers ================= */
-  const back = mk(), front = mk();
-  (function buildBack() {
+  /* ================= routes ================= */
+  // Each crew member loops through nodes: stand and do `act` for `dur` seconds, then walk to the next.
+  function mkRoute(nodes, speed) {
+    speed = speed || 15;
+    const segs = []; let t = 0;
+    nodes.forEach((a, i) => {
+      const b = nodes[(i + 1) % nodes.length];
+      segs.push({ t0: t, t1: t + a.dur, stay: true, a });
+      t += a.dur;
+      const wt = Math.hypot(b.x - a.x, b.y - a.y) / speed;
+      if (wt > 0) { segs.push({ t0: t, t1: t + wt, a, b }); t += wt; }
+    });
+    return { segs, total: Math.max(t, 0.001) };
+  }
+  function at(rt, T) {
+    const tt = T % rt.total;
+    let s = rt.segs[rt.segs.length - 1];
+    for (const g of rt.segs) if (tt >= g.t0 && tt < g.t1) { s = g; break; }
+    if (s.stay) return { x: s.a.x, y: s.a.y, dir: s.a.face || "d", moving: false, act: s.a.act, au: tt - s.t0, carry: !!s.a.carry, step: 0, tt };
+    const u = (tt - s.t0) / (s.t1 - s.t0), dx = s.b.x - s.a.x, dy = s.b.y - s.a.y;
+    return {
+      x: s.a.x + dx * u, y: s.a.y + dy * u, moving: true, carry: !!s.a.carry, au: 0, tt,
+      dir: Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "r" : "l") : (dy > 0 ? "d" : "u"),
+      step: [0, 1, 2, 3][Math.floor(T * 7) % 4]
+    };
+  }
+  const N = (x, y, act, dur, face, carry) => ({ x, y, act, dur: dur || 0, face, carry });
+  const ROUTES = {
+    captain: mkRoute([
+      N(224, 58, "steer", 7, "u"), N(236, 58, "look", 1.5, "d"), N(236, 78), N(233, 104),
+      N(176, 124, "point", 4, "d"),
+      N(233, 104), N(236, 78), N(236, 58)
+    ]),
+    mate: mkRoute([N(208, 122, "pick", 1.2, "d", true), N(178, 168, "put", 1.2, "d", false)]),
+    nav: mkRoute([N(240, 148, "map", 6, "r"), N(248, 112, "scope", 5, "u")]),
+    qm: mkRoute([N(274, 172, "write", 6, "r"), N(262, 160, "write", 4, "d")]),
+    cook: mkRoute([N(126, 166, "stir", 7, "r"), N(152, 152, "taste", 3, "r")]),
+    carp: mkRoute([N(44, 184, "hammer", 7, "u"), N(98, 170, "saw", 5, "l")]),
+    gunner: mkRoute([N(14, 116, "fire", 9, "r"), N(82, 114), N(94, 138, "sword", 5, "r"), N(82, 114)]),
+    kid: mkRoute([N(98, 106, "fish", 100, "u")])
+  };
+
+  /* ================= static sprites ================= */
+  const TREE = spr(34, 38, s => {
+    R(s, 5, 32, 24, 5, "rgba(0,40,0,.25)");
+    R(s, 14, 26, 5, 10, "#6b3b1a"); R(s, 14, 26, 2, 10, "#8a5a2b"); R(s, 12, 34, 3, 2, "#6b3b1a"); R(s, 19, 34, 3, 2, "#6b3b1a");
+    for (let y = 0; y < 30; y++) for (let x = 0; x < 34; x++) {
+      const dx = (x - 17) / 16, dy = (y - 15) / 14, d = dx * dx + dy * dy;
+      if (d > 1) continue;
+      const v = dx * 0.6 + dy * 0.9;
+      let col = d > 0.8 ? "#23622a" : v < -0.45 ? "#8bd653" : v < -0.05 ? "#5db440" : v < 0.45 ? "#418f33" : "#2f7329";
+      if (((x + y) & 1) && Math.abs(v + 0.05) < 0.12) col = "#5db440";
+      R(s, x, y, 1, 1, col);
+    }
+    [[10, 12], [22, 18], [16, 22], [25, 9], [8, 20]].forEach(([x, y]) => { R(s, x, y, 2, 2, "#e8453a"); R(s, x, y, 1, 1, "#ff9a8a"); });
+  });
+  const CABIN = spr(66, 58, s => {
+    // walls
+    R(s, 5, 24, 56, 28, "#b88348");
+    for (let y = 27; y < 50; y += 4) R(s, 5, y, 56, 1, "#94642f");
+    R(s, 5, 48, 56, 4, "#8c8c96"); for (let x = 5; x < 61; x += 7) R(s, x, 48, 1, 4, "#6e6e78");
+    R(s, 5, 24, 2, 28, "#d4a064"); R(s, 59, 24, 2, 28, "#8a5a2b");
+    // roof
+    for (let r = 0; r < 18; r++) {
+      const col = Math.floor(r / 3) % 2 ? "#c8372d" : "#b22d25";
+      R(s, 0, 8 + r, 66, 1, r % 3 === 2 ? "#8a1f19" : col);
+      if (r % 3 !== 2) for (let x = (Math.floor(r / 3) % 2) * 4; x < 66; x += 8) R(s, x, 8 + r, 1, 1, "#8a1f19");
+    }
+    R(s, 0, 6, 66, 2, "#e0605a"); R(s, 0, 26, 66, 2, "#5a1410");
+    // chimney
+    R(s, 46, 0, 8, 12, "#8c8c96"); R(s, 46, 0, 8, 2, "#b4b4c0"); R(s, 46, 4, 8, 1, "#6e6e78"); R(s, 46, 8, 8, 1, "#6e6e78");
+    // door + windows
+    R(s, 27, 34, 11, 18, "#4a2a12"); R(s, 28, 35, 9, 17, "#5e3a1a"); R(s, 35, 43, 1, 2, GOLD);
+    R(s, 24, 33, 17, 2, "#8a5a2b");
+    [[10, 35], [45, 35]].forEach(([x, y]) => { R(s, x - 1, y - 1, 12, 11, "#6e3b1a"); R(s, x, y, 10, 9, "#ffe27a"); R(s, x + 4, y, 2, 9, "#8a5a2b"); R(s, x, y + 4, 10, 2, "#8a5a2b"); R(s, x, y + 9, 10, 1, "#fff2b0"); });
+    // hanging sign
+    R(s, 61, 28, 1, 14, "#4a2a12"); R(s, 61, 28, 5, 1, "#4a2a12");
+    R(s, 59, 35, 7, 7, "#e0c27a"); R(s, 59, 35, 7, 1, "#8a5a2b"); R(s, 61, 37, 3, 2, "#1a1a2e"); R(s, 62, 39, 1, 2, "#1a1a2e");
+  });
+  const TENT = spr(38, 28, s => {
+    R(s, 2, 24, 34, 3, "rgba(0,40,0,.22)");
+    for (let r = 0; r < 22; r++) {
+      const half = Math.round(2 + r * 0.82), cx = 19;
+      for (let x = cx - half; x <= cx + half; x++) R(s, x, 2 + r, 1, 1, Math.floor((x + 40) / 4) % 2 ? "#f4f1e4" : "#c8372d");
+      R(s, cx + half - 1, 2 + r, 2, 1, "#8a5a2b");
+    }
+    R(s, 18, 0, 1, 4, "#4a2a12"); R(s, 19, 0, 4, 3, "#c8372d");
+    R(s, 15, 14, 8, 10, "#2a1c10"); R(s, 17, 12, 4, 3, "#2a1c10");
+  });
+  const CRATE = spr(9, 9, s => { R(s, 0, 0, 9, 9, "#c9a45a"); R(s, 0, 0, 9, 1, "#e8cf8a"); R(s, 0, 8, 9, 1, "#8a6a2a"); R(s, 0, 0, 1, 9, "#8a6a2a"); R(s, 8, 0, 1, 9, "#8a6a2a"); R(s, 4, 0, 1, 9, "#8a6a2a"); R(s, 1, 1, 7, 1, "#e0c27a"); });
+  const BARREL = spr(9, 12, s => { R(s, 1, 0, 7, 12, "#8a5a2b"); R(s, 0, 2, 9, 8, "#8a5a2b"); R(s, 0, 3, 9, 1, "#3d1f0c"); R(s, 0, 8, 9, 1, "#3d1f0c"); R(s, 2, 1, 1, 10, "#b27a3e"); R(s, 1, 0, 7, 1, "#c99a58"); });
+  const CHEST = spr(16, 14, s => {
+    R(s, 1, 12, 14, 2, "rgba(0,40,0,.25)");
+    R(s, 1, 5, 14, 8, "#8a5a2b"); R(s, 1, 2, 14, 4, "#b27a3e"); R(s, 2, 1, 12, 1, "#b27a3e");
+    R(s, 1, 6, 14, 1, "#2a1c10"); R(s, 1, 12, 14, 1, "#5a2f14"); R(s, 1, 2, 1, 11, "#5a2f14"); R(s, 14, 2, 1, 11, "#5a2f14");
+    R(s, 7, 5, 3, 4, GOLD); R(s, 8, 6, 1, 2, "#8a5a00");
+    R(s, 3, 0, 3, 2, GOLD); R(s, 8, 0, 2, 1, "#ffe27a"); R(s, 11, 0, 2, 2, GOLD);
+  });
+  const TABLE = spr(28, 18, s => {
+    R(s, 1, 14, 26, 3, "rgba(0,40,0,.22)");
+    R(s, 2, 12, 3, 5, "#5a2f14"); R(s, 23, 12, 3, 5, "#5a2f14");
+    R(s, 0, 4, 28, 9, "#a9753a"); R(s, 0, 4, 28, 1, "#d2a35e"); R(s, 0, 12, 28, 1, "#6e3b1a");
+    R(s, 3, 5, 18, 6, "#f0dfb0"); R(s, 3, 5, 18, 1, "#fff3d0"); R(s, 15, 7, 2, 1, "#c8372d"); R(s, 16, 6, 1, 3, "#c8372d");
+    L(s, 5, 9, 12, 7, "#2f6fb0"); R(s, 23, 5, 4, 4, GOLD); R(s, 24, 6, 2, 2, "#8a5a00");
+  });
+  const BENCH = spr(32, 18, s => {
+    R(s, 1, 15, 30, 3, "rgba(0,40,0,.22)");
+    R(s, 3, 9, 3, 8, "#5a2f14"); R(s, 26, 9, 3, 8, "#5a2f14");
+    R(s, 0, 5, 32, 5, "#a9753a"); R(s, 0, 5, 32, 1, "#d2a35e"); R(s, 0, 9, 32, 1, "#6e3b1a");
+    R(s, 4, 3, 12, 2, "#d8b06a"); R(s, 20, 2, 8, 3, "#c9a45a");
+    R(s, 24, 0, 2, 3, "#8a8a96");
+  });
+  const PLANKS = spr(18, 10, s => { R(s, 0, 6, 18, 3, "rgba(0,40,0,.2)"); R(s, 0, 3, 16, 3, "#d8b06a"); R(s, 0, 3, 16, 1, "#ecd08e"); R(s, 2, 0, 15, 3, "#c9a45a"); R(s, 2, 0, 15, 1, "#e0c27a"); R(s, 1, 6, 15, 2, "#b8923f"); });
+  const ROWBOAT = spr(36, 14, s => {
+    R(s, 2, 11, 32, 3, "rgba(0,40,0,.22)");
+    for (let r = 0; r < 9; r++) { const i = Math.round(Math.abs(r - 4) * 0.9); R(s, i, 1 + r, 36 - i * 2, 1, r === 0 ? "#b27a3e" : r > 6 ? "#5a2f14" : "#8a5a2b"); }
+    R(s, 6, 2, 24, 5, "#4a2a12"); R(s, 12, 2, 2, 5, "#b27a3e"); R(s, 22, 2, 2, 5, "#b27a3e");
+    L(s, 4, 0, 30, 12, "#c9a45a");
+  });
+  const CANNON = spr(26, 16, s => {
+    R(s, 2, 12, 22, 3, "rgba(0,40,0,.22)");
+    R(s, 5, 7, 12, 3, "#2a2a32"); R(s, 12, 6, 7, 3, "#2a2a32"); R(s, 18, 5, 6, 4, "#2a2a32");
+    R(s, 5, 7, 12, 1, "#5a5a68"); R(s, 12, 6, 7, 1, "#5a5a68"); R(s, 18, 5, 6, 1, "#5a5a68"); R(s, 23, 6, 2, 2, "#15151c");
+    R(s, 3, 9, 14, 3, "#5a2f14"); R(s, 3, 9, 14, 1, "#8a5a2b");
+    for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; R(s, 10 + Math.round(Math.cos(a) * 4), 10 + Math.round(Math.sin(a) * 4), 1, 1, "#b27a3e"); }
+    R(s, 9, 9, 2, 2, "#5a2f14");
+  });
+  const DUMMY = spr(14, 26, s => {
+    R(s, 1, 23, 12, 3, "rgba(0,40,0,.22)");
+    R(s, 6, 8, 2, 16, "#5a2f14"); R(s, 2, 22, 10, 2, "#5a2f14");
+    R(s, 2, 10, 10, 2, "#8a5a2b"); R(s, 3, 9, 8, 8, "#d8b06a"); R(s, 3, 9, 8, 1, "#ecd08e");
+    for (let y = 11; y < 17; y += 2) R(s, 3, y, 8, 1, "#b8923f");
+    R(s, 4, 2, 6, 7, "#d8b06a"); R(s, 5, 4, 1, 1, DARK); R(s, 8, 4, 1, 1, DARK); R(s, 4, 2, 6, 1, "#c8372d");
+    R(s, 5, 11, 4, 4, "#c8372d"); R(s, 6, 12, 2, 2, "#fff");
+  });
+  const SIGN = spr(18, 24, s => {
+    R(s, 2, 20, 14, 3, "rgba(0,40,0,.22)");
+    R(s, 8, 8, 2, 14, "#5a2f14");
+    R(s, 1, 2, 16, 9, "#c9a45a"); R(s, 1, 2, 16, 1, "#e8cf8a"); R(s, 1, 10, 16, 1, "#8a6a2a");
+    R(s, 6, 4, 6, 4, "#1a1a2e"); R(s, 7, 5, 1, 1, "#fff"); R(s, 10, 5, 1, 1, "#fff"); R(s, 7, 8, 4, 1, "#1a1a2e");
+    L(s, 3, 8, 14, 4, "#1a1a2e");
+  });
+  const STONE = spr(8, 6, s => { R(s, 0, 3, 8, 3, "rgba(0,40,0,.2)"); R(s, 1, 1, 6, 4, "#8c8c96"); R(s, 2, 0, 3, 1, "#a9a9b4"); R(s, 1, 1, 6, 1, "#a9a9b4"); R(s, 1, 4, 6, 1, "#5e5e68"); });
+
+  /* ================= back + land layers ================= */
+  const back = mkc(W, H), front = mkc(W, H);
+  (function () {
     const c = back.getContext("2d");
-    const sky = ["#4fa9ee", "#6dbbf3", "#8accf6", "#a9dcf9", "#c6e8fb"], band = HOR / 5;
-    for (let y = 0; y < HOR; y++) {
-      const i = Math.min(4, Math.floor(y / band)), pos = y - i * band;
-      R(c, 0, y, W, 1, sky[i]);
-      if (i < 4 && pos > band - 3) for (let x = y % 2; x < W; x += 2) R(c, x, y, 1, 1, sky[i + 1]);
-    }
-    // sun
-    for (let dy = -12; dy <= 12; dy++) for (let dx = -12; dx <= 12; dx++) {
-      const d = dx * dx + dy * dy;
-      if (d <= 49) R(c, 270 + dx, 24 + dy, 1, 1, "#fff7c8");
-      else if (d <= 81) R(c, 270 + dx, 24 + dy, 1, 1, "#ffe27a");
-      else if (d <= 144 && (dx + dy) % 2 === 0) R(c, 270 + dx, 24 + dy, 1, 1, "#ffeeb0");
-    }
-    // far islands
-    for (let x = 18; x < 120; x++) { const h = Math.round(9 * Math.pow(Math.sin(Math.PI * (x - 18) / 102), 0.8)); R(c, x, HOR - h, 1, h, "#5f9f8f"); }
-    R(c, 70, HOR - 15, 1, 7, "#3d6b5a"); R(c, 67, HOR - 16, 7, 1, "#3d6b5a"); R(c, 68, HOR - 17, 5, 1, "#4d8b72");
-    for (let x = 160; x < 210; x++) { const h = Math.round(5 * Math.sin(Math.PI * (x - 160) / 50)); R(c, x, HOR - h, 1, h, "#7fb3a8"); }
-    // sea
-    for (let y = HOR; y < H; y++) R(c, 0, y, W, 1, lerp("#3d9fe0", "#1b62a6", Math.min(1, Math.floor((y - HOR) / 8) / 11)));
-    R(c, 0, HOR, W, 1, "#b8e3ff");
+    for (let y = 0; y < SHORE + 10; y++) R(c, 0, y, W, 1, lerp("#2a74bd", "#69c8f4", Math.pow(Math.min(1, Math.floor(y / 8) * 8 / (SHORE + 4)), 1.4)));
   })();
-
-  (function buildFront() {
+  (function () {
     const c = front.getContext("2d");
-    // hill + grass
-    for (let x = 0; x < 114; x++) {
-      const top = 119 - Math.round(17 * Math.pow(Math.sin(Math.PI * x / 114), 0.7));
-      R(c, x, top, 1, 129 - top, "#5aa833"); R(c, x, top, 1, 1, "#86d14f"); R(c, x, top + 1, 1, 1, "#74c13f");
+    const PATH = [[46, 152], [70, 160], [108, 164], [150, 152], [188, 130], [214, 114], [233, 102]];
+    for (let x = 0; x < W; x++) {
+      const sy = shoreY(x), gt = grassTop(x);
+      R(c, x, sy, 1, gt - sy, "#f3dc9a");
+      R(c, x, sy, 1, 3, "#e0c27a"); R(c, x, sy + 3, 1, 2, "#ead08a");
+      R(c, x, gt, 1, H - gt, "#7fc64f");
+      if (x % 2 === 0) R(c, x, gt, 1, 1, "#f3dc9a"); else R(c, x, gt + 1, 1, 1, "#f3dc9a");
     }
-    R(c, 0, 119, 131, 10, "#6dbb3f");
+    for (let i = 0; i < 180; i++) {
+      const x = rnd(i + 11) * W, y = SHORE + 8 + rnd(i + 77) * 90;
+      if (y > grassTop(x) + 1) { const w = 5 + Math.floor(rnd(i + 5) * 8); R(c, x, y, w, 2, "#8fd05a"); R(c, x + 1, y - 1, w - 2, 1, "#8fd05a"); }
+    }
+    for (let i = 0; i < 90; i++) {
+      const x = rnd(i + 200) * W, y = SHORE + 12 + rnd(i + 300) * 90;
+      if (y > grassTop(x) + 2) { R(c, x, y, 1, 2, "#5fa83a"); R(c, x + 2, y, 1, 2, "#5fa83a"); R(c, x + 1, y + 1, 1, 1, "#5fa83a"); }
+    }
+    // dirt path
+    const dirt = (r, col) => {
+      for (let s = 0; s < PATH.length - 1; s++) {
+        const [x0, y0] = PATH[s], [x1, y1] = PATH[s + 1], n = Math.ceil(Math.hypot(x1 - x0, y1 - y0));
+        for (let i = 0; i <= n; i++) {
+          const px = x0 + (x1 - x0) * i / n, py = y0 + (y1 - y0) * i / n;
+          for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (dx * dx + dy * dy <= r * r) R(c, px + dx, py + dy, 1, 1, col);
+        }
+      }
+    };
+    dirt(6, "#b98650"); dirt(5, "#d2aa70");
+    for (let i = 0; i < 110; i++) {
+      const s = Math.floor(rnd(i + 900) * (PATH.length - 1)), t = rnd(i + 910), [x0, y0] = PATH[s], [x1, y1] = PATH[s + 1];
+      R(c, x0 + (x1 - x0) * t + rnd(i + 920) * 8 - 4, y0 + (y1 - y0) * t + rnd(i + 930) * 8 - 4, 1, 1, i % 2 ? "#bf935a" : "#e6c690");
+    }
+    // sand details
+    for (let i = 0; i < 90; i++) { const x = rnd(i + 400) * W, y = SHORE + 5 + rnd(i + 410) * 14; if (y > shoreY(x) + 5 && y < grassTop(x)) R(c, x, y, 1, 1, i % 3 ? "#dcbf74" : "#fff3c0"); }
+    [[40, 106], [172, 109], [276, 108]].forEach(([x, y]) => { R(c, x, y, 3, 2, "#f2a0a8"); R(c, x + 1, y - 1, 1, 1, "#fff"); });
+    // flowers
+    const FL = ["#ffffff", "#ffd35c", "#f28ab0", "#a58af0", "#ff8a5c"];
     for (let i = 0; i < 70; i++) {
-      const x = rnd(i) * 128, y = 108 + rnd(i + 99) * 19;
-      if (y > 119 || x > 6) { R(c, x, y, 1, 2, "#8fd35a"); R(c, x + 1, y + 1, 1, 1, "#4e9a2e"); }
+      const x = 3 + rnd(i + 500) * (W - 6), y = SHORE + 20 + rnd(i + 600) * 88;
+      if (y < grassTop(x) + 3) continue;
+      const col = FL[i % FL.length];
+      R(c, x - 1, y, 1, 1, col); R(c, x + 1, y, 1, 1, col); R(c, x, y - 1, 1, 1, col); R(c, x, y + 1, 1, 1, col); R(c, x, y, 1, 1, "#ffe27a");
     }
-    for (let i = 0; i < 9; i++) { const x = 4 + rnd(i + 50) * 120, y = 121 + rnd(i + 70) * 6; R(c, x, y, 1, 1, i % 2 ? "#ffd35c" : "#fff"); R(c, x, y + 1, 1, 1, "#3f8a2a"); }
-    R(c, 0, 128, 131, 1, "#3f8a2a");
-    // sand
-    const edge = y => 131 + Math.min(8, Math.floor((y - 128) * 0.8));
-    for (let y = 129; y < H; y++) {
-      const e = edge(y);
-      R(c, 0, y, e, 1, "#f1d78e"); R(c, e - 3, y, 3, 1, "#dcc27a");
+    // pier
+    R(c, 224, 76, 18, 28, "rgba(8,40,80,.28)");
+    for (let k = 0; k < 3; k++) { R(c, 225, 80 + k * 10, 3, 7, "#4a2a12"); R(c, 239, 80 + k * 10, 3, 7, "#4a2a12"); R(c, 225, 80 + k * 10, 3, 2, "#8a5a2b"); R(c, 239, 80 + k * 10, 3, 2, "#8a5a2b"); }
+    for (let y = 70; y < 104; y += 4) {
+      R(c, 226, y, 14, 3, "#b27a3e"); R(c, 226, y, 14, 1, "#d6a864"); R(c, 226, y + 3, 14, 1, "#6e3b1a");
+      R(c, 229 + (y % 8), y, 1, 3, "#8a5a2b");
     }
-    for (let i = 0; i < 150; i++) { const x = rnd(i + 300) * 128, y = 131 + rnd(i + 700) * 48; R(c, x, y, 1, 1, i % 3 ? "#dcbf74" : "#fff0b8"); }
-    // rocks
-    [[34, 176], [100, 134]].forEach(([x, y]) => { R(c, x, y, 6, 3, "#8c8c96"); R(c, x + 1, y - 1, 4, 1, "#a9a9b4"); R(c, x, y + 2, 6, 1, "#5e5e68"); });
-    // crates on the beach (start of the haul)
-    R(c, 112, 122, 7, 6, "#c9a45a"); R(c, 112, 122, 7, 1, "#e0c27a"); R(c, 112, 125, 7, 1, "#8a6a2a"); R(c, 115, 122, 1, 6, "#8a6a2a");
-    R(c, 106, 124, 6, 4, "#b8923f"); R(c, 108, 124, 1, 4, "#8a6a2a");
-    // hut
-    R(c, 60, 106, 21, 13, "#b07a40");
-    for (let y = 108; y < 119; y += 3) R(c, 60, y, 21, 1, "#8a5a2b");
-    for (let r = 0; r < 7; r++) R(c, 70 - (r + 1) * 2 - 1, 99 + r, (r + 1) * 4 + 3, 1, r === 0 ? "#e0605a" : "#c8372d");
-    R(c, 56, 105, 29, 1, "#8a1f19");
-    R(c, 66, 110, 6, 9, "#3a1d0a"); R(c, 73, 109, 5, 5, "#ffe27a"); R(c, 75, 109, 1, 5, "#8a5a2b"); R(c, 73, 111, 5, 1, "#8a5a2b");
-    R(c, 76, 94, 4, 8, "#8c8c96");
-    // dock
-    R(c, 120, 135, 72, 3, "rgba(8,40,80,.35)");
-    for (let k = 0; k < 4; k++) { R(c, 124 + k * 24, 134, 3, 13, "#5a2f14"); R(c, 124 + k * 24, 146, 3, 1, "#3d1f0c"); }
-    R(c, 120, 130, 72, 4, "#a9753a"); R(c, 120, 130, 72, 1, "#d2a35e"); R(c, 120, 134, 72, 1, "#5a2f14");
-    for (let x = 126; x < 190; x += 6) R(c, x, 131, 1, 3, "#7a4a1e");
-    for (let k = 0; k < 4; k++) { R(c, 123 + k * 24, 126, 5, 4, "#5a2f14"); R(c, 123 + k * 24, 126, 5, 1, "#8a5a2b"); }
-    // crates on the dock (where the haul ends)
-    [[160, 124], [168, 124], [164, 118]].forEach(([x, y]) => { R(c, x, y, 7, 6, "#c9a45a"); R(c, x, y, 7, 1, "#e0c27a"); R(c, x, y + 5, 7, 1, "#8a6a2a"); R(c, x + 3, y, 1, 6, "#8a6a2a"); });
-    R(c, 174, 122, 7, 8, "#8a5a2b"); R(c, 174, 124, 7, 1, "#3d1f0c"); R(c, 174, 128, 7, 1, "#3d1f0c"); R(c, 174, 122, 7, 1, "#b27a3e");
-    // gangplank
-    L(c, 190, 132, 198, 121, "#b27a3e"); L(c, 191, 132, 199, 121, "#8a5a2b"); L(c, 189, 132, 197, 121, "#b27a3e");
-    // chest
-    R(c, 8, 154, 13, 8, "#8a5a2b"); R(c, 8, 151, 13, 4, "#b27a3e"); R(c, 8, 154, 13, 1, "#2a1c10"); R(c, 8, 161, 13, 1, "#5a2f14");
-    R(c, 13, 154, 3, 3, GOLD); R(c, 8, 151, 1, 11, "#5a2f14"); R(c, 20, 151, 1, 11, "#5a2f14");
-    R(c, 10, 149, 3, 2, GOLD); R(c, 14, 150, 2, 1, "#ffe27a"); R(c, 17, 149, 2, 2, GOLD);
+    R(c, 224, 70, 2, 34, "#6e3b1a"); R(c, 240, 70, 2, 34, "#6e3b1a");
   })();
 
-  /* ================= dynamic scene ================= */
+  /* ================= dynamic bits ================= */
   const cv = document.getElementById("scene");
   const ctx = cv.getContext("2d");
   ctx.imageSmoothingEnabled = false;
-
-  function cloud(c, x, y, u) {
-    R(c, x + 4 * u, y, 5 * u, u, "#fff"); R(c, x + 2 * u, y + u, 10 * u, u, "#fff");
-    R(c, x, y + 2 * u, 14 * u, u, "#fff"); R(c, x + u, y + 3 * u, 12 * u, u, "#dcebf7");
-  }
-  const CLOUDS = [[20, 14, 2, 3], [150, 30, 2, 2], [240, 8, 2, 1.5], [90, 52, 1, 4], [300, 46, 1, 2.5]];
+  const blit = (c, s, x, y) => c.drawImage(s, Math.round(x), Math.round(y));
 
   function palm(c, x, y, T, ph, h, lean) {
     let tx = x, ty = y;
     for (let i = 0; i < h; i++) {
       tx = x + Math.round(Math.sin(i / h * 1.3) * 5 * lean); ty = y - i;
-      R(c, tx, ty, 2, 1, i % 3 ? "#8a5a2b" : "#6b3b1a");
+      R(c, tx, ty, 3, 1, i % 3 ? "#8a5a2b" : "#6b3b1a");
     }
     const sw = REDUCED ? 0 : Math.sin(T * 1.1 + ph) * 1.5;
     [[-15, 5], [-10, -2], [-5, -7], [0, -9], [5, -7], [10, -2], [15, 5]].forEach(([dx, dy]) => {
       const ex = tx + dx + (dx > 0 ? sw : -sw) * Math.abs(dx) / 10, ey = ty + dy + 3;
       const mx = tx + dx * 0.55, my = ty + dy * 0.5 - 3;
-      L(c, tx + 1, ty, mx, my, "#4fb02e"); L(c, mx, my, ex, ey, "#2f7a20");
-      L(c, mx, my - 1, ex, ey - 1, "#7ad04a");
+      L(c, tx + 1, ty, mx, my, "#5cc03a"); L(c, mx, my, ex, ey, "#3a8f28");
+      L(c, mx, my - 1, ex, ey - 1, "#8fe05a");
     });
     R(c, tx - 1, ty + 1, 2, 2, "#5a2f14"); R(c, tx + 2, ty + 1, 2, 2, "#5a2f14");
+    R(c, x - 4, y, 11, 2, "rgba(0,40,0,.25)");
   }
 
   function ship(c, T, b) {
-    const top = 116 + b, sw = (a, s) => REDUCED ? 0 : Math.sin(a) * s;
-    // rigging
-    L(c, 240, 12, 186, top - 14, "#3a2210"); L(c, 240, 12, 304, top - 6, "#3a2210");
+    const D = 58 + b, sw = (a, s) => REDUCED ? 0 : Math.sin(a) * s;
+    R(c, 184, D + 14, 108, 10, "rgba(0,30,70,.22)");
+    // deck + far rail
+    for (let y = D - 9; y < D; y++) {
+      const l = 190, r = 288 - Math.floor((D - y) * 2.5);
+      R(c, l, y, r - l, 1, (y + D) % 3 ? "#d2ad68" : "#b8923f");
+    }
+    R(c, 190, D - 11, 90, 2, "#8a5a2b"); for (let x = 192; x < 280; x += 8) R(c, x, D - 14, 2, 4, "#6e3b1a");
     // stern cabin
-    R(c, 183, top - 14, 15, 14, "#8a5a2b"); R(c, 182, top - 16, 17, 3, "#5a2f14");
-    for (let y = top - 11; y < top; y += 3) R(c, 183, y, 15, 1, "#6e3b1a");
-    R(c, 187, top - 11, 6, 5, "#ffe27a"); R(c, 190, top - 11, 1, 5, "#8a5a2b"); R(c, 187, top - 9, 6, 1, "#8a5a2b");
+    R(c, 192, D - 30, 22, 20, "#8a5a2b"); R(c, 190, D - 34, 26, 5, "#5a2f14"); R(c, 190, D - 34, 26, 1, "#8a5a2b");
+    for (let y = D - 27; y < D - 11; y += 3) R(c, 192, y, 22, 1, "#6e3b1a");
+    R(c, 197, D - 25, 8, 6, "#ffe27a"); R(c, 200, D - 25, 2, 6, "#8a5a2b"); R(c, 197, D - 23, 8, 1, "#8a5a2b");
     // masts
-    R(c, 239, 10, 3, top - 10, "#4a2a12"); R(c, 239, 10, 1, top - 10, "#6e3b1a");
-    R(c, 287, 46, 3, top - 46, "#4a2a12"); R(c, 287, 46, 1, top - 46, "#6e3b1a");
-    // bowsprit
-    L(c, 300, top + 1, 319, top - 6, "#4a2a12"); L(c, 300, top + 2, 319, top - 5, "#4a2a12");
-    // sails (rows ripple in the wind)
-    for (let r = 0; r < 44; r++) {
-      const o = Math.round(sw(T * 1.6 + r * 0.15, 1.2));
-      const col = r % 14 === 13 ? "#d9d0b0" : "#f6f2e2";
-      R(c, 224 + o, 52 + r, 32, 1, col); R(c, 248 + o, 52 + r, 8, 1, r % 14 === 13 ? "#cfc59f" : "#e4dcc0");
+    R(c, 235, 10, 3, D - 14, "#4a2a12"); R(c, 235, 10, 1, D - 14, "#6e3b1a");
+    R(c, 269, 22, 3, D - 26, "#4a2a12"); R(c, 269, 22, 1, D - 26, "#6e3b1a");
+    // main sail
+    for (let r = 0; r < 26; r++) {
+      const o = Math.round(sw(T * 1.6 + r * 0.17, 1.2));
+      R(c, 214 + o, 26 + r, 44, 1, r % 13 === 12 ? "#d9d0b0" : "#f6f2e2");
+      R(c, 246 + o, 26 + r, 12, 1, r % 13 === 12 ? "#cfc59f" : "#e4dcc0");
     }
-    R(c, 220, 50, 40, 2, "#4a2a12");
-    // skull emblem
-    R(c, 237, 66, 7, 5, "#1a1a2e"); R(c, 238, 71, 5, 2, "#1a1a2e");
-    R(c, 238, 68, 2, 2, "#fff"); R(c, 241, 68, 2, 2, "#fff"); R(c, 240, 70, 1, 1, "#fff");
-    R(c, 239, 72, 1, 1, "#fff"); R(c, 241, 72, 1, 1, "#fff");
-    L(c, 234, 75, 246, 81, "#1a1a2e"); L(c, 246, 75, 234, 81, "#1a1a2e");
-    for (let r = 0; r < 34; r++) {
-      const o = Math.round(sw(T * 1.6 + r * 0.15 + 1, 1));
-      const red = r >= 12 && r <= 17;
-      R(c, 274 + o, 58 + r, 26, 1, red ? "#c8372d" : "#f6f2e2");
-      R(c, 292 + o, 58 + r, 8, 1, red ? "#a82a22" : "#e4dcc0");
+    R(c, 211, 24, 50, 2, "#4a2a12");
+    R(c, 232, 33, 8, 6, "#1a1a2e"); R(c, 233, 39, 6, 2, "#1a1a2e");
+    R(c, 233, 35, 2, 2, "#fff"); R(c, 237, 35, 2, 2, "#fff"); R(c, 236, 37, 1, 1, "#fff");
+    R(c, 234, 41, 1, 1, "#fff"); R(c, 237, 41, 1, 1, "#fff");
+    L(c, 228, 44, 246, 48, "#1a1a2e"); L(c, 246, 44, 228, 48, "#1a1a2e");
+    // fore sail
+    for (let r = 0; r < 22; r++) {
+      const o = Math.round(sw(T * 1.6 + r * 0.17 + 1, 1));
+      const red = r >= 8 && r <= 12;
+      R(c, 258 + o, 30 + r, 26, 1, red ? "#c8372d" : "#f6f2e2"); R(c, 275 + o, 30 + r, 9, 1, red ? "#a82a22" : "#e4dcc0");
     }
-    R(c, 272, 56, 30, 2, "#4a2a12");
+    R(c, 255, 28, 32, 2, "#4a2a12");
     // flag
-    R(c, 238, 4, 5, 4, GOLD);
-    for (let col = 0; col < 11; col++) {
+    R(c, 234, 6, 5, 4, GOLD);
+    for (let col = 0; col < 12; col++) {
       const o = Math.round(sw(T * 4 + col * 0.7, 1.3));
-      R(c, 242 + col, 5 + o, 1, 7, "#15152a");
-      if (col >= 3 && col <= 6) { R(c, 242 + col, 7 + o, 1, 2, "#fff"); }
+      R(c, 238 + col, 1 + o, 1, 7, "#15152a");
+      if (col >= 3 && col <= 6) R(c, 238 + col, 3 + o, 1, 2, "#fff");
     }
     // hull
-    for (let r = 0; r < 24; r++) {
-      const l = 182 + Math.floor(r * 0.45), rr = 306 - r;
-      const col = r < 2 ? "#b27a3e" : r < 4 ? "#5a2f14" : r === 9 ? GOLD : r === 13 || r === 14 ? "#a82a22" : r > 20 ? "#3d1f0c" : (r % 4 === 0 ? "#5e3216" : "#6e3b1a");
-      R(c, l, top + r, rr - l, 1, col);
+    for (let r = 0; r < 20; r++) {
+      const l = 184 + Math.floor(r * 0.3), rr = 292 - Math.floor(r * 1.25);
+      const col = r < 2 ? "#c99a58" : r < 4 ? "#6e3b1a" : r === 9 ? GOLD : r === 13 || r === 14 ? "#a82a22" : r > 17 ? "#3d1f0c" : (r % 4 === 0 ? "#6a3818" : "#7a4420");
+      R(c, l, D + r, rr - l, 1, col);
     }
-    [210, 230, 250, 270].forEach(px => { R(c, px, top + 5, 5, 3, "#140a05"); R(c, px, top + 5, 5, 1, "#3a2210"); });
-    // rail
-    for (let x = 200; x < 300; x += 10) R(c, x, top - 3, 1, 3, "#8a5a2b");
-    R(c, 200, top - 3, 100, 1, "#a9753a");
-    // waterline foam
+    [206, 224, 252, 270].forEach(px => { R(c, px, D + 5, 5, 3, "#140a05"); R(c, px, D + 5, 5, 1, "#3a2210"); });
+    // rope ladder
+    R(c, 233, D, 1, 20, "#c9a45a"); R(c, 239, D, 1, 20, "#c9a45a");
+    for (let y = D + 1; y < D + 20; y += 3) R(c, 233, y, 7, 1, "#c9a45a");
+    // bowsprit + waterline foam
+    L(c, 286, D + 1, 306, D - 6, "#4a2a12"); L(c, 286, D + 2, 306, D - 5, "#4a2a12");
     for (let i = 0; i < 12; i++) {
-      const x = 180 + ((i * 11 + (REDUCED ? 0 : T * 9)) % 130);
-      R(c, x, top + 23, 5, 1, "#e6f4ff"); R(c, x + 2, top + 24, 4, 1, "#8cc8f2");
+      const x = 184 + ((i * 10 + (REDUCED ? 0 : T * 8)) % 104);
+      R(c, x, D + 19, 5, 1, "#e6f4ff"); R(c, x + 2, D + 20, 4, 1, "#9bd4f6");
     }
   }
 
-  function draw(T) {
-    const c = ctx;
-    c.drawImage(back, 0, 0);
-    // clouds
-    CLOUDS.forEach(([x0, y, u, v]) => { const x = ((x0 + (REDUCED ? 0 : T * v)) % (W + 80)) - 50; cloud(c, x, y, u); });
-    // gulls
-    for (let i = 0; i < 3; i++) {
-      const gx = ((i * 120 + (REDUCED ? 60 : T * 7)) % (W + 40)) - 20, gy = 40 + i * 10 + (REDUCED ? 0 : Math.sin(T * 2 + i) * 2);
-      const f = REDUCED ? 0 : Math.floor(T * 3 + i) % 2;
-      R(c, gx - 2, gy + f, 2, 1, "#fff"); R(c, gx + 1, gy + f, 2, 1, "#fff"); R(c, gx, gy + 1 - f * 0, 1, 1, "#fff");
-    }
-    // waves
-    for (let k = 0; k < 18; k++) {
-      const y = HOR + 4 + k * 5, len = 6 + (k % 3) * 2, col = k < 6 ? "#7cc4f2" : "#58a8e2";
-      for (let i = 0; i < 7; i++) {
-        const x = ((i * 52 + k * 17 + (REDUCED ? 0 : T * (4 + (k % 3) * 3))) % (W + 20)) - 10;
-        R(c, x, y, len, 1, col); R(c, x + len + 2, y + 1, 3, 1, col);
+  /* ================= crew drawing ================= */
+  function drawCrew(c, id, T) {
+    const p = at(ROUTES[id], REDUCED ? 0 : T), look = LOOK[id];
+    const x = Math.round(p.x), y = Math.round(p.y), t = p.au;
+    const swing = p.moving ? (p.step === 1 ? 1 : p.step === 3 ? -1 : 0) : 0;
+    let hl = [0, 4 + swing], hr = [0, 4 - swing], pre = null, post = null;
+    const ph = (REDUCED ? 0 : T);
+    switch (p.act) {
+      case "steer": {
+        const a = Math.sin(ph * 0.5) * 0.9;
+        pre = () => {
+          for (let i = 0; i < 8; i++) { const g = a + i * Math.PI / 4; L(c, x, y - 18, x + Math.cos(g) * 7, y - 18 + Math.sin(g) * 7, "#c9a45a"); }
+          for (let i = 0; i < 20; i++) { const g = i * Math.PI / 10; R(c, x + Math.round(Math.cos(g) * 6), y - 18 + Math.round(Math.sin(g) * 6), 1, 1, "#8a5a2b"); }
+        };
+        hl = [2, -4]; hr = [-2, -4]; break;
+      }
+      case "look": hr = [3, -7]; post = () => { L(c, x + 6, y - 17, x + 12, y - 20, "#c9a45a"); R(c, x + 12, y - 21, 2, 3, GOLD); }; break;
+      case "point": hr = [7, -6]; post = () => {
+        if (t % 2 < 1.6) { R(c, x - 3, y - 36, 8, 9, "#2a1c10"); R(c, x - 2, y - 35, 6, 7, "#fff"); R(c, x, y - 34, 2, 3, "#c8372d"); R(c, x, y - 30, 2, 1, "#c8372d"); R(c, x - 1, y - 27, 2, 2, "#2a1c10"); }
+      }; break;
+      case "pick": case "put": hl = [-1, 6]; hr = [1, 6]; break;
+      case "stir": {
+        const a = ph * 4, hx = 6 + Math.round(Math.cos(a) * 1.5), hy = -1 + Math.round(Math.sin(a) * 1.5);
+        hr = [hx, hy]; post = () => L(c, x + 3 + hx, y - 10 + 1 + hy, x + 3 + hx + 5, y - 10 + 1 + hy + 3, "#c9c9d0"); break;
+      }
+      case "taste": hr = [2, -6]; hl = [-1, 3]; post = () => { R(c, x + 2, y - 17, 4, 2, "#e0c27a"); R(c, x + 2, y - 18, 4, 1, "#fff"); }; break;
+      case "hammer": {
+        const q = (ph * 1.8) % 1, up = q < 0.7;
+        hr = up ? [3, -8] : [3, 0]; hl = [-2, 0];
+        post = () => {
+          const hx = x + 3 + 3, hy = y - 10 + 1 + (up ? -8 : 0);
+          R(c, hx, hy - 4, 1, 5, "#8a5a2b"); R(c, hx - 1, hy - 6, 4, 2, "#8a8a96");
+          if (!up && q < 0.78) { R(c, x - 4, y - 14, 1, 1, GOLD); R(c, x + 6, y - 15, 1, 1, "#fff2b0"); R(c, x + 2, y - 16, 1, 1, "#fff2b0"); }
+        }; break;
+      }
+      case "saw": {
+        const o = Math.round(Math.sin(ph * 6) * 2);
+        hl = [-3 + o, 1]; hr = [-2 + o, 2];
+        post = () => { R(c, x - 14 + o, y - 8, 9, 2, "#c9c9d0"); R(c, x - 5 + o, y - 10, 2, 4, "#8a5a2b"); }; break;
+      }
+      case "fire": {
+        if (t > 5 && t < 6) { hr = [6, -2]; hl = [3, 1]; } else if (t >= 6) { hl = [0, -7]; hr = [1, -7]; }
+        break;
+      }
+      case "sword": {
+        const q = (ph * 1.4) % 1, up = q < 0.5;
+        hr = up ? [4, -9] : [8, -3]; hl = [-1, 3];
+        post = () => {
+          const hx = x + 3 + (up ? 4 : 8), hy = y - 10 + 1 + (up ? -9 : -3);
+          L(c, hx, hy, hx + (up ? 4 : 8), hy + (up ? -6 : 2), "#d8d8e4"); R(c, hx - 1, hy, 3, 1, GOLD);
+        }; break;
+      }
+      case "map": hr = [5, -1]; hl = [4, -2]; break;
+      case "scope": hr = [2, -8]; hl = [-2, 0]; post = () => { L(c, x + 6, y - 18, x + 11, y - 24, "#c9a45a"); R(c, x + 11, y - 25, 2, 2, GOLD); }; break;
+      case "write": {
+        const j = REDUCED ? 0 : Math.floor(ph * 3) % 2;
+        hl = [3, -1]; hr = [4, -1 + j];
+        post = () => { R(c, x + 4, y - 13, 7, 9, "#8a5a2b"); R(c, x + 5, y - 12, 5, 7, "#f0dfb0"); R(c, x + 5, y - 10, 4, 1, "#8a7a5a"); R(c, x + 5, y - 8, 3, 1, "#8a7a5a"); }; break;
+      }
+      case "fish": {
+        const dip = !REDUCED && (ph % 6) > 5.1;
+        hr = [4, dip ? -6 : -4]; hl = [3, -1];
+        post = () => {
+          const hx = x + 3 + 4, hy = y - 10 + 1 + (dip ? -6 : -4), tx = x + 16, ty = y - 28;
+          L(c, hx, hy, tx, ty, "#b27a3e");
+          const bx = x + 18, by = 90 + (REDUCED ? 0 : Math.round(Math.sin(ph * 2))) + (dip ? 2 : 0);
+          L(c, tx, ty, bx, by, "#f4f4ee"); R(c, bx - 1, by, 3, 2, "#c8372d"); R(c, bx - 1, by, 3, 1, "#fff");
+          if (!REDUCED) { const r = Math.floor(ph * 2) % 3; R(c, bx - 3 - r, by + 3, 6 + r * 2, 1, "rgba(255,255,255,.55)"); }
+        }; break;
       }
     }
-    const b = REDUCED ? 0 : Math.round(Math.sin(T * 1.3));
-    ship(c, T, b);
+    if (pre) pre();
+    person(c, x, y, { ...look, dir: p.dir, step: p.step, hl, hr });
+    if (p.carry && p.dir !== "u") blit(c, CRATE, x - 4, y - 14);
+    if (post) post();
+  }
+
+  /* ================= frame ================= */
+  function draw(T) {
+    const c = ctx, Tm = REDUCED ? 0 : T;
+    c.drawImage(back, 0, 0);
+    // water shimmer
+    for (let k = 0; k < 11; k++) {
+      const y = 6 + k * 8;
+      for (let i = 0; i < 6; i++) {
+        const x = ((i * 61 + k * 23 + Tm * (3 + k % 3)) % (W + 30)) - 15, len = 6 + (k % 3) * 3;
+        if (y < shoreY(x) - 6) { R(c, x, y, len, 1, "rgba(255,255,255,.28)"); R(c, x + len + 3, y + 1, 3, 1, "rgba(255,255,255,.2)"); }
+      }
+    }
+    for (let i = 0; i < 46; i++) {
+      const x = rnd(i) * W, y = 2 + rnd(i + 9) * (SHORE - 8);
+      if (((Tm * 0.9 + rnd(i + 3) * 5) % 2) < 0.3) { R(c, x, y - 1, 1, 3, "#fff"); R(c, x - 1, y, 3, 1, "#fff"); }
+    }
+    const b = REDUCED ? 0 : Math.round(Math.sin(Tm * 1.3));
+    ship(c, Tm, b);
     c.drawImage(front, 0, 0);
-    palm(c, 24, 123, T, 0, 30, 1);
-    palm(c, 104, 120, T, 2, 26, -1);
+    // shoreline foam
+    for (let x = 0; x < W; x++) {
+      const w = REDUCED ? 1 : Math.floor((Math.sin(Tm * 1.5 + x / 14) + 1) * 1.3);
+      const sy = shoreY(x);
+      R(c, x, sy - 1 - w, 1, 1, "#ffffff"); if (w > 0) R(c, x, sy - 2 - w, 1, 1, "rgba(255,255,255,.55)");
+    }
+    // seagull shadows on the water
+    for (let i = 0; i < 3; i++) {
+      const gx = ((i * 130 + (REDUCED ? 70 : Tm * 9)) % (W + 40)) - 20, gy = 14 + i * 20;
+      R(c, gx - 2, gy + 9, 6, 2, "rgba(0,30,80,.2)");
+    }
 
     const E = [];
     const add = (y, fn) => E.push({ y, fn });
-
-    // captain at the wheel
-    add(116, () => {
-      const y = 116 + b, wx = 217, wy = y - 8, a = REDUCED ? 0 : T * 0.4;
-      R(c, wx, wy + 3, 2, 8, "#5a2f14");
-      for (let i = 0; i < 8; i++) {
-        const ang = a + i * Math.PI / 4;
-        L(c, wx, wy, wx + Math.cos(ang) * 6, wy + Math.sin(ang) * 6, "#c9a45a");
+    // scenery
+    add(148, () => {
+      blit(c, CABIN, 17, 148 - 52);
+      if (!REDUCED) for (let k = 0; k < 4; k++) {
+        const q = (Tm * 0.5 + k * 0.25) % 1;
+        R(c, 63 + Math.sin(Tm + k) * 2 + q * 6, 90 - q * 26, 2 + Math.floor(q * 3), 2 + Math.floor(q * 3), "rgba(240,240,245," + (0.8 * (1 - q)).toFixed(2) + ")");
       }
-      for (let i = 0; i < 16; i++) { const ang = i * Math.PI / 8; R(c, wx + Math.round(Math.cos(ang) * 5), wy + Math.round(Math.sin(ang) * 5), 1, 1, "#8a5a2b"); }
-      const point = !REDUCED && (T % 9) < 2.2;
-      person(c, 205, y, { ...LOOK.captain, dir: 1, hl: point ? [6, -7] : [-1, 4], hr: [8, 2] });
     });
-    // navigator with map and telescope
-    add(116, () => {
-      const y = 116 + b, tele = !REDUCED && (T % 8) < 3;
-      R(c, 276, y - 6, 12, 2, "#a9753a"); R(c, 277, y - 4, 2, 4, "#5a2f14"); R(c, 285, y - 4, 2, 4, "#5a2f14");
-      R(c, 278, y - 8, 8, 2, "#f0dfb0"); R(c, 283, y - 8, 1, 1, "#c8372d"); R(c, 279, y - 7, 3, 1, "#8a5a2b");
-      person(c, 268, y, { ...LOOK.nav, dir: 1, hl: tele ? [3, -7] : [3, 1], hr: tele ? [4, -9] : [6, 3] });
-      if (tele) { L(c, 272 + 4, y - 19, 272 + 11, y - 21, "#c9a45a"); R(c, 272 + 11, y - 22, 2, 3, GOLD); }
+    add(172, () => blit(c, TENT, 172, 172 - 26));
+    [[10, 180], [304, 168], [296, 134], [200, 188]].forEach(([x, y]) => add(y, () => blit(c, TREE, x - 17, y - 36)));
+    add(122, () => palm(c, 12, 122, Tm, 0, 30, 1));
+    add(116, () => palm(c, 118, 116, Tm, 2, 26, -1));
+    add(112, () => palm(c, 300, 112, Tm, 4, 28, 1));
+    add(122, () => { blit(c, CRATE, 210, 114); blit(c, CRATE, 219, 114); blit(c, CRATE, 214, 107); blit(c, BARREL, 200, 110); });
+    add(152, () => blit(c, BARREL, 160, 142));
+    add(176, () => { blit(c, CHEST, 284, 176 - 14); if (!REDUCED && Tm % 3 < 0.5) { R(c, 290, 156, 1, 5, "#fff"); R(c, 288, 158, 5, 1, "#fff"); } });
+    add(146, () => blit(c, TABLE, 248, 146 - 17));
+    add(172, () => blit(c, BENCH, 30, 172 - 17));
+    add(172, () => blit(c, PLANKS, 104, 172 - 8));
+    add(106, () => blit(c, ROWBOAT, 136, 106 - 12));
+    add(110, () => blit(c, SIGN, 212, 110 - 22));
+    add(140, () => blit(c, DUMMY, 99, 140 - 25));
+    add(125, () => blit(c, STONE, 66, 122)); add(190, () => blit(c, STONE, 120, 186)); add(130, () => blit(c, STONE, 250, 124));
+    // flagpole
+    add(120, () => {
+      R(c, 166, 66, 2, 56, "#6e3b1a"); R(c, 165, 64, 4, 3, GOLD);
+      for (let col = 0; col < 14; col++) {
+        const o = REDUCED ? 0 : Math.round(Math.sin(Tm * 3.5 + col * 0.6) * 1.4);
+        R(c, 168 + col, 68 + o, 1, 9, "#15152a");
+        if (col >= 4 && col <= 8) R(c, 168 + col, 70 + o, 1, 3, "#fff");
+      }
+      R(c, 164, 120, 6, 2, "rgba(0,40,0,.25)");
     });
-    // lookout in the crow's nest
-    add(46, () => {
-      const y = 46 + b, d = REDUCED || Math.sin(T * 0.6) >= 0 ? 1 : -1;
-      person(c, 240, y, { ...LOOK.lookout, dir: d, hl: [d * 4, -4], hr: [d * 5, -5] });
-      L(c, 240 + d * 9, y - 15, 240 + d * 15, y - 16, "#c9a45a"); R(c, 240 + d * 15, y - 17, 1, 3, GOLD);
-      R(c, 232, y - 5, 17, 2, "#a9753a"); R(c, 233, y - 3, 15, 5, "#8a5a2b"); R(c, 233, y, 15, 1, "#5a2f14"); R(c, 233, y + 2, 15, 1, "#3d1f0c");
-    });
-    // first mate hauling crates along the dock
-    add(131, () => {
-      const p = REDUCED ? 8 : (T * 9) % 64, right = p < 32, u = right ? p / 32 : 2 - p / 32;
-      const x = 124 + u * 32, st = REDUCED ? 0 : (Math.floor(T * 6) % 2 ? 1 : 2);
-      person(c, x, 131, { ...LOOK.mate, dir: right ? 1 : -1, step: st, hl: right ? [4, -3] : [-1, (st === 1 ? 5 : 3)], hr: right ? [3, -3] : [1, (st === 1 ? 3 : 5)] });
-      if (right) { R(c, x + 2, 131 - 14, 7, 6, "#c9a45a"); R(c, x + 2, 131 - 14, 7, 1, "#e0c27a"); R(c, x + 5, 131 - 14, 1, 6, "#8a6a2a"); }
-    });
-    // quartermaster counting
-    add(131, () => {
-      const t = REDUCED ? 0 : Math.floor(T * 2.5) % 2;
-      person(c, 183, 131, { ...LOOK.qm, dir: -1, hl: [-4, -1], hr: [-3, -3 + t] });
-      R(c, 183 - 11, 131 - 13, 6, 7, "#f0dfb0"); R(c, 183 - 11, 131 - 13, 6, 1, "#8a5a2b");
-      R(c, 183 - 10, 131 - 11, 4, 1, "#8a7a5a"); R(c, 183 - 10, 131 - 9, 3, 1, "#8a7a5a");
-    });
-    // kid fishing
-    add(143, () => {
-      const dip = !REDUCED && (T % 6) > 5.1, bob = REDUCED ? 0 : Math.round(Math.sin(T * 2)) + (dip ? 2 : 0);
-      person(c, 126, 143, { ...LOOK.kid, dir: 1, hl: [3, 1], hr: [5, dip ? -5 : -4] });
-      const hx = 126 + 4 + 5, hy = 143 - 10 + (dip ? -5 : -4);
-      L(c, hx, hy, 143, 122, "#b27a3e");
-      L(c, 143, 122, 143, 146 + bob, "#f4f4ee");
-      R(c, 142, 145 + bob, 3, 2, "#c8372d"); R(c, 142, 145 + bob, 3, 1, "#fff");
-      if (!REDUCED) { const r = Math.floor(T * 2) % 3; R(c, 140 - r, 149, 2 + r * 2 + 2, 1, "rgba(255,255,255,.55)"); }
-    });
-    // cook stirring over the fire
-    add(150, () => {
-      const y = 150, f = REDUCED ? 0 : Math.floor(T * 8) % 3, a = REDUCED ? 0 : T * 4;
-      const hx = 48 + 6 + Math.round(Math.cos(a) * 1.5), hy = y - 10 + 5 + Math.round(Math.sin(a) * 1.5);
-      L(c, 60, y - 22, 55, y - 2, "#5a2f14"); L(c, 64, y - 22, 69, y - 2, "#5a2f14");
-      R(c, 57, y - 2, 11, 2, "#5a2f14"); R(c, 58, y - 3, 9, 1, "#3d1f0c");
-      R(c, 59, y - 8, 7, 6, "#e8561a"); R(c, 60, y - 11 + (f % 2), 5, 7, "#f2b632"); R(c, 61, y - 6, 3, 3, "#fff2b0");
-      if (f === 1) R(c, 62, y - 13, 1, 2, "#e8561a");
-      R(c, 57, y - 18, 11, 7, "#2a2a32"); R(c, 56, y - 19, 13, 2, "#4a4a56"); R(c, 58, y - 17, 3, 1, "#6a6a78");
-      R(c, 59, y - 20, 7, 1, "#c8863a");
-      person(c, 48, y, { ...LOOK.cook, dir: 1, hl: [1, 4], hr: [hx - 52, hy - (y - 10)] });
-      L(c, hx, hy, hx + 5, hy - 2, "#c9c9d0");
+    // campfire
+    add(164, () => {
+      const f = REDUCED ? 0 : Math.floor(Tm * 8) % 3;
+      for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5; R(c, 136 + Math.round(Math.cos(a) * 8), 164 + Math.round(Math.sin(a) * 4), 3, 2, i % 2 ? "#8c8c96" : "#a9a9b4"); }
+      R(c, 130, 163, 12, 3, "#5a2f14"); R(c, 131, 162, 10, 1, "#3d1f0c");
+      R(c, 132, 158, 8, 6, "#e8561a"); R(c, 133, 155 + (f % 2), 6, 7, "#f2b632"); R(c, 134, 160, 4, 3, "#fff2b0");
+      if (f === 1) R(c, 136, 152, 1, 2, "#e8561a");
+      L(c, 131, 148, 127, 164, "#5a2f14"); L(c, 141, 148, 145, 164, "#5a2f14");
+      R(c, 130, 146, 13, 7, "#2a2a32"); R(c, 129, 145, 15, 2, "#4a4a56"); R(c, 132, 147, 3, 1, "#6a6a78"); R(c, 131, 148, 11, 1, "#c8863a");
+      R(c, 120, 170, 9, 3, "#6e3b1a"); R(c, 120, 170, 9, 1, "#a9753a"); R(c, 146, 171, 9, 3, "#6e3b1a"); R(c, 146, 171, 9, 1, "#a9753a");
       if (!REDUCED) for (let k = 0; k < 5; k++) {
-        const ph = (T * 0.8 + k * 0.2) % 1, px = 62 + Math.sin(T + k) * 3 + ph * 7, py = y - 24 - ph * 28, s = 2 + Math.floor(ph * 3);
-        R(c, px, py, s, s, "rgba(245,245,250," + (0.75 * (1 - ph)).toFixed(2) + ")");
+        const q = (Tm * 0.8 + k * 0.2) % 1;
+        R(c, 136 + Math.sin(Tm + k) * 3 + q * 6, 142 - q * 34, 2 + Math.floor(q * 3), 2 + Math.floor(q * 3), "rgba(245,245,250," + (0.75 * (1 - q)).toFixed(2) + ")");
       }
     });
-    // carpenter hammering
-    add(166, () => {
-      const y = 166, ph = REDUCED ? 0 : (T * 1.6) % 1, up = ph < 0.7;
-      R(c, 91, y - 5, 14, 2, "#d8b06a"); R(c, 91, y - 5, 14, 1, "#ecd08e");
-      R(c, 93, y - 3, 2, 3, "#5a2f14"); R(c, 101, y - 3, 2, 3, "#5a2f14");
-      R(c, 108, y - 1, 2, 1, "#e8c88a"); R(c, 86, y, 1, 1, "#e8c88a"); R(c, 106, y + 1, 1, 1, "#e8c88a");
-      person(c, 84, y, { ...LOOK.carp, dir: 1, hl: [4, -2], hr: up ? [4, -7] : [8, -1] });
-      const hx = 84 + 4 + (up ? 4 : 8), hy = y - 10 + (up ? -7 : -1);
-      R(c, hx, hy - 4, 1, 5, "#8a5a2b"); R(c, hx - 1, hy - 6, 4, 2, "#8a8a96");
-      if (!up && ph < 0.78) { R(c, 96, y - 7, 1, 1, GOLD); R(c, 98, y - 8, 1, 1, "#fff2b0"); R(c, 94, y - 7, 1, 1, "#fff2b0"); }
-    });
-    // gunner and cannon
-    add(172, () => {
-      const y = 172, ph = REDUCED ? 0 : T % 8, load = ph > 5.2 && ph < 6;
-      R(c, 114, y - 5, 12, 2, "#5a2f14");
-      R(c, 116, y - 8, 7, 5, "#2a2a32"); R(c, 122, y - 9, 6, 5, "#2a2a32"); R(c, 127, y - 10, 5, 5, "#2a2a32");
-      R(c, 116, y - 8, 7, 1, "#4a4a56"); R(c, 122, y - 9, 6, 1, "#4a4a56"); R(c, 127, y - 10, 5, 1, "#4a4a56");
-      for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; R(c, 119 + Math.round(Math.cos(a) * 4), y - 4 + Math.round(Math.sin(a) * 4), 1, 1, "#8a5a2b"); }
-      R(c, 119, y - 4, 1, 1, "#8a5a2b");
-      person(c, 108, y, { ...LOOK.gunner, dir: 1, hl: [2, 4], hr: load ? [6, -3] : [1, 4] });
-      if (ph >= 6 && ph < 6.25) R(c, 132, y - 14, 5, 6, "#fff2b0");
+    // cannon with its shots
+    add(110, () => {
+      blit(c, CANNON, 24, 110 - 14);
+      if (REDUCED) return;
+      const ph = Tm % ROUTES.gunner.total, mx = 49, my = 100;
+      if (ph >= 6 && ph < 6.25) R(c, mx, my - 3, 5, 6, "#fff2b0");
       if (ph >= 6 && ph < 7.8) for (let i = 0; i < 4; i++) {
         const q = ph - 6;
-        R(c, 133 + q * 14 + i * 3, y - 10 - q * 5 - i, 2 + Math.floor(q * 3), 2 + Math.floor(q * 3), "rgba(232,232,236," + Math.max(0, 0.9 - q * 0.5).toFixed(2) + ")");
+        R(c, mx + 2 + q * 12 + i * 3, my - q * 6 - i, 2 + Math.floor(q * 3), 2 + Math.floor(q * 3), "rgba(232,232,236," + Math.max(0, 0.9 - q * 0.5).toFixed(2) + ")");
       }
       if (ph >= 6 && ph < 7.4) {
         const u = (ph - 6) / 1.4;
-        R(c, 134 + u * 70, 162 + 8 * u - 100 * u * (1 - u), 3, 3, "#15151c");
-      } else if (ph >= 7.4) {
+        R(c, mx + u * 52, my - u * 34 + 28 * u * u - 6 * u, 3, 3, "#15151c");
+      } else if (ph >= 7.4 && ph < 8.6) {
         const q = ph - 7.4;
-        for (let i = 0; i < 4; i++) R(c, 204 + (i - 1.5) * 3 * (1 + q * 2), 170 - Math.sin(Math.min(1, q * 1.6) * Math.PI) * 8, 2, 2, "#e6f4ff");
+        for (let i = 0; i < 4; i++) R(c, 101 + (i - 1.5) * 3 * (1 + q * 2), 70 - Math.sin(Math.min(1, q * 1.6) * Math.PI) * 8, 2, 2, "#e6f4ff");
       }
     });
-    // treasure sparkle
-    add(163, () => {
-      const t = REDUCED ? 0 : T % 3;
-      if (t < 0.5) { R(c, 12, 144, 1, 5, "#fff"); R(c, 10, 146, 5, 1, "#fff"); R(c, 11, 145, 3, 3, "rgba(255,240,170,.6)"); }
+    // crab
+    add(110, () => {
+      const cx = 182 + (REDUCED ? 0 : Math.sin(Tm * 0.4) * 14), f = REDUCED ? 0 : Math.floor(Tm * 6) % 2;
+      R(c, cx, 108, 6, 3, "#e0453a"); R(c, cx + 1, 107, 4, 1, "#f0705a"); R(c, cx + 1, 107, 1, 1, DARK); R(c, cx + 4, 107, 1, 1, DARK);
+      R(c, cx - 2, 106 - f, 2, 2, "#e0453a"); R(c, cx + 6, 106 - (1 - f), 2, 2, "#e0453a");
+      R(c, cx, 111, 1, 1, "#a82a22"); R(c, cx + 2, 111, 1, 1, "#a82a22"); R(c, cx + 4, 111, 1, 1, "#a82a22");
     });
-    // parrot
+    // crew on the ground and on the ship
+    ["mate", "qm", "nav", "cook", "carp", "gunner", "kid", "captain"].forEach(id => add(Math.round(at(ROUTES[id], Tm).y), () => drawCrew(c, id, Tm)));
+    add(20, () => {
+      const y = 20 + b, d = REDUCED || Math.sin(Tm * 0.6) >= 0 ? "r" : "l", s = d === "r" ? 1 : -1;
+      person(c, 236, y, { ...LOOK.lookout, dir: d, hl: [s * 3, -5], hr: [s * 5, -6] });
+      L(c, 236 + s * 8, y - 16, 236 + s * 14, y - 19, "#c9a45a"); R(c, 236 + s * 14, y - 20, 1, 3, GOLD);
+      R(c, 227, y - 5, 19, 2, "#c99a58"); R(c, 228, y - 3, 17, 6, "#8a5a2b"); R(c, 228, y, 17, 1, "#5a2f14"); R(c, 228, y + 2, 17, 1, "#3d1f0c");
+    });
+    // parrot (flies in front of everything, with a ground shadow)
     add(260, () => {
-      const t = REDUCED ? 1.2 : T, px = 170 + 66 * Math.sin(t * 0.45), py = 64 + 10 * Math.sin(t * 0.9);
-      const d = Math.cos(t * 0.45) >= 0 ? 1 : -1;
-      parrot(c, px, py, d, REDUCED ? 0 : Math.floor(T * 8) % 2);
+      const t = REDUCED ? 1.2 : Tm, px = 160 + 100 * Math.sin(t * 0.35), py = 70 + 24 * Math.sin(t * 0.7), d = Math.cos(t * 0.35) >= 0 ? 1 : -1, f = REDUCED ? 0 : Math.floor(Tm * 8) % 2;
+      R(c, px, py + 22, 6, 2, "rgba(0,20,0,.2)");
+      R(c, px - d * 4 + (d > 0 ? 0 : 3), py + 1, 4, 1, "#2f6fb0");
+      R(c, px, py, 5, 3, "#d8312a"); R(c, px + (d > 0 ? 5 : -2), py - 1, 3, 3, "#d8312a");
+      R(c, px + (d > 0 ? 8 : -3), py, 1, 1, GOLD); R(c, px + (d > 0 ? 6 : -1), py - 1, 1, 1, "#fff");
+      R(c, px + 1, py + (f ? -2 : 3), 3, 2, "#2f6fb0");
+    });
+    // gulls overhead
+    add(270, () => {
+      for (let i = 0; i < 3; i++) {
+        const gx = ((i * 130 + (REDUCED ? 70 : Tm * 9)) % (W + 40)) - 20, gy = 14 + i * 20 + (REDUCED ? 0 : Math.sin(Tm * 1.7 + i) * 3), f = REDUCED ? 0 : Math.floor(Tm * 3 + i) % 2;
+        R(c, gx - 3, gy + f, 3, 1, "#fff"); R(c, gx + 1, gy + f, 3, 1, "#fff"); R(c, gx - 1, gy + 1, 2, 1, "#fff");
+      }
     });
 
     E.sort((a, b2) => a.y - b2.y).forEach(e => e.fn());
+
+    // drifting cloud shadows
+    for (let i = 0; i < 3; i++) {
+      const bx = ((i * 140 + (REDUCED ? 40 : Tm * 5)) % (W + 140)) - 70, by = 40 + i * 60;
+      for (let dy = -12; dy <= 12; dy += 2) {
+        const hw = Math.round(Math.sqrt(1 - (dy / 13) * (dy / 13)) * 36);
+        R(c, bx - hw, by + dy, hw * 2, 2, "rgba(10,30,70,.09)");
+      }
+    }
   }
 
   /* ================= full-frame scaling ================= */
-  // Cover the viewport with a whole-number scale (crisp pixels). If that would crop too much of
-  // the scene, step down and let the sky/sea body background fill the letterbox.
+  // Cover the viewport with a whole-number scale so pixels stay crisp. If that would crop too
+  // much of the scene, step down and let the water/grass body background fill the letterbox.
   function fit() {
     const vw = innerWidth, vh = innerHeight;
     let s = Math.max(vw / W, vh / H);
     if (s >= 2) {
       s = Math.ceil(s);
-      if (vw / s < W * 0.8) s = Math.floor(Math.max(vw / W, vh / H));
+      if (vw / s < W * 0.8 || vh / s < H * 0.8) s = Math.floor(Math.max(vw / W, vh / H));
     } else if (vw / s < W * 0.8) s = vw / (W * 0.8);
-    if (s * W > vw * 1.25) s = vw * 1.25 / W; // never crop more than ~20% of the width
+    if (s * W > vw * 1.25) s = vw * 1.25 / W;
     cv.style.width = Math.round(W * s) + "px";
     cv.style.height = Math.round(H * s) + "px";
   }
