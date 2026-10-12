@@ -6,177 +6,19 @@
 <title>megawan · Pulau Bajak Laut</title>
 <meta name="description" content="Pulau bajak laut bergaya pixel ala Stardew Valley. Kapten dan kru kapal punya tugas masing-masing; klik untuk berkenalan.">
 <meta name="theme-color" content="#8accf6">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --ink: #3b2412;
-    --paper: #fbf0cc;
-    --paper-dk: #ecd9a0;
-    --sand: #f1d78e;
-    --wood: #8a5a2b;
-    --wood-lt: #b27a3e;
-    --wood-dk: #5a2f14;
-    --gold: #f2b632;
-    --red: #c8372d;
-    --sea: #2f86c8;
-    --grass: #5aa833;
-    --px: "Press Start 2P", "Courier New", monospace;
-    --body: "VT323", "Courier New", monospace;
-  }
-  *, *::before, *::after { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    margin: 0; color: var(--ink);
-    font-family: var(--body); font-size: 23px; line-height: 1.25;
-    background-color: var(--sand);
-    background-image:
-      linear-gradient(45deg, rgba(120,80,20,.07) 25%, transparent 25%, transparent 75%, rgba(120,80,20,.07) 75%),
-      linear-gradient(45deg, rgba(120,80,20,.07) 25%, transparent 25%, transparent 75%, rgba(120,80,20,.07) 75%);
-    background-size: 16px 16px; background-position: 0 0, 8px 8px;
-  }
-  a { color: var(--wood-dk); }
-  :focus-visible { outline: 4px solid var(--red); outline-offset: 3px; }
-  canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
-  h1, h2, h3, p { margin: 0; }
-
-  /* chunky pixel border: notched corners, no radius */
-  .px {
-    background: var(--paper);
-    box-shadow:
-      0 -4px 0 0 var(--ink), 0 4px 0 0 var(--ink), -4px 0 0 0 var(--ink), 4px 0 0 0 var(--ink),
-      inset -4px -4px 0 0 rgba(90,47,20,.18), inset 4px 4px 0 0 rgba(255,255,255,.5);
-  }
-  .wood {
-    background: var(--wood);
-    color: #fff3d0;
-    box-shadow:
-      0 -4px 0 0 var(--ink), 0 4px 0 0 var(--ink), -4px 0 0 0 var(--ink), 4px 0 0 0 var(--ink),
-      inset 0 -6px 0 0 var(--wood-dk), inset 0 4px 0 0 var(--wood-lt);
-  }
-
-  .wrap { width: min(100% - 40px, 1000px); margin-inline: auto; }
-
-  /* ===== header sign ===== */
-  header { padding: 36px 0 28px; text-align: center; }
-  .sign { display: inline-block; padding: 22px 30px 20px; position: relative; max-width: 100%; }
-  .sign::before, .sign::after { content: ""; position: absolute; top: 10px; width: 8px; height: 8px; background: #2a1c10; }
-  .sign::before { left: 10px; } .sign::after { right: 10px; }
-  h1 { font-family: var(--px); font-size: clamp(18px, 5vw, 38px); line-height: 1.3; letter-spacing: 1px; text-shadow: 3px 3px 0 var(--ink); color: var(--gold); }
-  .sign p { font-size: 24px; margin-top: 10px; color: #ffe9b0; }
-
-  /* ===== stage ===== */
-  .stage-wrap { margin: 0 auto; }
-  .frame { padding: 10px; margin: 0 auto; width: fit-content; max-width: 100%; }
-  #scene { cursor: default; width: 100%; height: auto; background: #8accf6; }
-  #scene.hit { cursor: pointer; }
-
-  .dialog { display: flex; gap: 18px; align-items: stretch; margin: 28px auto 0; padding: 14px 16px; min-height: 148px; }
-  .dialog .face { flex: none; width: 96px; height: 104px; background: #bfe6fb; box-shadow: 0 0 0 4px var(--ink); align-self: center; }
-  .dialog .face canvas { width: 100%; height: 100%; }
-  .dialog .rank { font-family: var(--px); font-size: 10px; line-height: 1.5; color: var(--red); }
-  .dialog .who { font-family: var(--px); font-size: clamp(13px, 2.4vw, 17px); line-height: 1.5; margin: 6px 0 8px; }
-  .dialog .say { min-height: 3.75em; }
-  .dialog .go { display: inline-block; margin-top: 8px; font-family: var(--px); font-size: 10px; text-decoration: none; padding: 9px 12px; background: var(--gold); color: var(--ink); box-shadow: 0 0 0 3px var(--ink); }
-  .dialog .go:hover { background: #ffd35c; }
-  .dialog .go[hidden] { display: none; }
-
-  /* ===== sections ===== */
-  section.block { margin-top: 56px; }
-  h2.sec { font-family: var(--px); font-size: clamp(14px, 3vw, 20px); line-height: 1.4; margin-bottom: 22px; text-align: center; }
-  h2.sec span { display: inline-block; padding: 10px 16px; }
-
-  .roster { list-style: none; margin: 0; padding: 4px; display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
-  .roster button {
-    width: 100%; height: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; border: 0;
-    display: grid; grid-template-columns: 72px 1fr; gap: 12px; align-items: center; padding: 12px;
-    background: var(--paper);
-    box-shadow:
-      0 -4px 0 0 var(--ink), 0 4px 0 0 var(--ink), -4px 0 0 0 var(--ink), 4px 0 0 0 var(--ink),
-      inset -4px -4px 0 0 rgba(90,47,20,.18), inset 4px 4px 0 0 rgba(255,255,255,.5);
-    transition: transform .08s steps(2);
-  }
-  .roster button:hover { transform: translateY(-4px); background: #fff7dc; }
-  .roster button[aria-pressed="true"] { background: #ffe9a0; outline: 4px solid var(--red); outline-offset: 0; }
-  .roster canvas { width: 72px; height: 78px; background: #bfe6fb; }
-  .roster .r { display: block; font-family: var(--px); font-size: 8px; line-height: 1.6; color: var(--red); }
-  .roster .n { display: block; font-size: 25px; line-height: 1.05; margin: 3px 0; }
-  .roster .j { display: block; font-size: 19px; line-height: 1.1; opacity: .85; }
-
-  .ports { list-style: none; margin: 0; padding: 4px; display: grid; gap: 26px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-  .ports a {
-    display: block; height: 100%; text-decoration: none; padding: 18px 18px 16px; position: relative;
-    transition: transform .08s steps(2);
-  }
-  .ports a:hover { transform: translateY(-4px); }
-  .ports a:hover b { color: #fff; }
-  .ports b { display: block; font-family: var(--px); font-size: 12px; line-height: 1.6; color: var(--gold); font-weight: normal; margin-bottom: 8px; text-shadow: 2px 2px 0 var(--ink); }
-  .ports i { display: block; font-style: normal; font-size: 21px; line-height: 1.15; }
-  .ports a::after { content: "▶"; position: absolute; right: 14px; bottom: 10px; font-size: 14px; color: var(--gold); }
-
-  footer { margin-top: 64px; padding: 26px 16px 40px; text-align: center; background: var(--wood-dk); color: #ffe9b0; box-shadow: inset 0 6px 0 0 var(--ink); }
-  footer a { color: var(--gold); }
-  footer p + p { margin-top: 4px; opacity: .75; font-size: 19px; }
-
-  @media (max-width: 560px) {
-    body { font-size: 21px; }
-    .wrap { width: min(100% - 28px, 1000px); }
-    .dialog { flex-direction: column; align-items: center; text-align: center; }
-    .dialog .face { width: 72px; height: 78px; }
-    .sign { padding: 18px 16px; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .roster button, .ports a { transition: none; }
-  }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  /* sky above the horizon line, sea below: fills any letterbox around the canvas */
+  body { background: linear-gradient(#8accf6 48.9%, #3d9fe0 48.9%); }
+  #scene { position: fixed; left: 50%; top: 48.9%; transform: translate(-50%, -48.9%); display: block;
+           image-rendering: pixelated; image-rendering: crisp-edges; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>
 </head>
 <body>
-
-<header>
-  <div class="sign wood">
-    <h1>MEGAWAN</h1>
-    <p>Pulau Bajak Laut: tempat kru kecil mengurus awan dan kode</p>
-  </div>
-</header>
-
-<main class="wrap">
-  <section class="stage-wrap" aria-label="Pulau bajak laut">
-    <div class="frame wood" id="frame">
-      <canvas id="scene" width="320" height="180" role="img"
-        aria-label="Pulau bajak laut di siang hari. Kapten berdiri di kemudi kapal yang bersandar di dermaga, sementara kru bekerja: first mate memindahkan peti, navigator membaca peta, pengintai mengawasi dari tiang, koki memasak, tukang kayu memalu, gunner menembakkan meriam, dan kelasi cilik memancing."></canvas>
-    </div>
-
-    <div class="dialog px" id="dialog" aria-live="polite">
-      <div class="face"><canvas id="face" width="24" height="26" aria-hidden="true"></canvas></div>
-      <div>
-        <p class="rank" id="d-rank">SELAMAT DATANG</p>
-        <h2 class="who" id="d-who">Ahoy, pendatang!</h2>
-        <p class="say" id="d-say"></p>
-        <a class="go" id="d-go" href="#" hidden></a>
-      </div>
-    </div>
-  </section>
-
-  <section class="block" aria-labelledby="crew-h">
-    <h2 class="sec" id="crew-h"><span class="wood">AWAK KAPAL</span></h2>
-    <ul class="roster" id="roster"></ul>
-  </section>
-
-  <section class="block" aria-labelledby="port-h">
-    <h2 class="sec" id="port-h"><span class="wood">PELABUHAN</span></h2>
-    <ul class="ports">
-      <li><a class="wood" href="games/pirates/"><b>PIRATES</b><i>Game berlayar kecil. Arahkan kapal ke pulau untuk melihat kerjaan cloud, catatan, dan RPG bajak laut.</i></a></li>
-      <li><a class="wood" href="games/hijaiyah/"><b>HURUF HIJAIYAH</b><i>Game belajar untuk anak: 28 huruf hijaiyah dan harakatnya, lengkap dengan suara.</i></a></li>
-      <li><a class="wood" href="https://github.com/megawan"><b>GITHUB</b><i>Peta harta karun: semua repo dan catatan ada di github.com/megawan.</i></a></li>
-    </ul>
-  </section>
-</main>
-
-<footer>
-  <p>Dibangun di dek kapal dengan canvas dan kesabaran.</p>
-  <p><a href="https://github.com/megawan">github.com/megawan</a></p>
-</footer>
+<h1 class="sr">megawan · Pulau Bajak Laut</h1>
+<canvas id="scene" width="320" height="180" role="img"
+  aria-label="Pulau bajak laut bergaya pixel di siang hari: kapal bajak laut bersandar di dermaga, kapten di kemudi, dan kru yang sibuk bekerja."></canvas>
 
 <script>
 (() => {
@@ -196,32 +38,6 @@
     carp:     { hat: "cap",  hatc: "#c9a45a", hair: "#5a2f14", shirt: "#8a5a2b", pants: "#3d1f0c", beard: "#6b3b1a" },
     kid:      { hat: "cap",  hatc: "#2f6fb0", hair: "#5a2f14", shirt: "#e8eef0", stripes: "#2f6fb0", pants: "#1d3a5c" }
   };
-
-  const CREW = [
-    { id: "captain", look: "captain", name: "Kapten Megawan", rank: "1 · KAPTEN", job: "Memegang kemudi seluruh kapal",
-      say: "Akulah yang memegang kemudi. Awan, otomasi, dan keamanan server semuanya lewat meja kapten ini. Selamat datang di pulauku!",
-      link: ["https://github.com/megawan", "Buka GitHub"] },
-    { id: "mate", look: "mate", name: "Ansible", rank: "2 · FIRST MATE", job: "Mengangkut playbook ke kapal",
-      say: "Aku mengangkut peti-peti playbook dari pantai ke kapal. Sekali tulis, jalan di semua server. Kapten tinggal menunjuk." },
-    { id: "nav", look: "nav", name: "AWScripting", rank: "3 · NAVIGATOR", job: "Membaca peta lautan AWS",
-      say: "Kumpulan AWS CLI untuk mempermudah kerjaan. Tanpa peta ini, kapal bisa nyasar ke tagihan yang tidak perlu." },
-    { id: "qm", look: "qm", name: "Lambda Reminder", rank: "4 · QUARTERMASTER", job: "Mencatat dan mengingatkan IAM",
-      say: "Aku mencatat semua kunci dan akses di buku ini. Kalau ada yang lupa dirotasi, lambda otomatisku akan mengingatkan." },
-    { id: "gunner", look: "gunner", name: "Valkyrie", rank: "5 · GUNNER", job: "Menembak penyusup SSH",
-      say: "Alat kecil dalam Perl untuk menangkal brute force SSH dan serangan kamus. Siapa pun yang mengetuk pintu terlalu sering, kena meriam." },
-    { id: "lookout", look: "lookout", name: "Si Mata Elang", rank: "6 · PENGINTAI", job: "Mengawasi cakrawala dari tiang",
-      say: "Dari tiang tertinggi aku mengawasi log, alarm, dan hal-hal yang terlihat mencurigakan di kejauhan. Kapal ini aman selama aku melek." },
-    { id: "cook", look: "cook", name: "Koki Shell", rank: "7 · KOKI", job: "Mengaduk skrip jadi sup",
-      say: "Sedikit bash, sedikit curl, banyak sabar. Skrip kecil yang diaduk pelan-pelan jadi sup yang bisa dimakan seluruh kru." },
-    { id: "carp", look: "carp", name: "Tukang Kayu", rank: "8 · TUKANG KAYU", job: "Memalu papan dek kapal",
-      say: "Aku memalu papan dek kapal ini: halaman utama dan game-game kecil di pulau ini. Masih ada beberapa papan yang belum dipaku." },
-    { id: "kid", look: "kid", name: "Kelasi Cilik", rank: "9 · KELASI", job: "Memancing sambil belajar",
-      say: "Sambil memancing aku belajar huruf hijaiyah! Ada 28 huruf lengkap dengan harakat dan suaranya. Mau ikut belajar?",
-      link: ["games/hijaiyah/", "Main game hijaiyah"] },
-    { id: "parrot", look: null, name: "Polly", rank: "MASKOT", job: "Terbang, berkoar, tidak bekerja",
-      say: "Kwaak! Tersesat? Klik awak kapal di pulau atau pilih dari daftar. Kalau lapar, koki ada di dekat api unggun!" }
-  ];
-  const byId = Object.fromEntries(CREW.map(c => [c.id, c]));
 
   /* ================= drawing helpers ================= */
   const SKIN = "#f2c28b", DARK = "#2a1c10", GOLD = "#f2b632";
@@ -382,8 +198,6 @@
   const cv = document.getElementById("scene");
   const ctx = cv.getContext("2d");
   ctx.imageSmoothingEnabled = false;
-  const hits = {};
-  let hoverId = null, selId = null;
 
   function cloud(c, x, y, u) {
     R(c, x + 4 * u, y, 5 * u, u, "#fff"); R(c, x + 2 * u, y + u, 10 * u, u, "#fff");
@@ -463,8 +277,6 @@
     }
   }
 
-  const clampHit = (id, cx, top, bottom) => { hits[id] = { x0: cx - 7, y0: top, x1: cx + 7, y1: bottom }; };
-
   function draw(T) {
     const c = ctx;
     c.drawImage(back, 0, 0);
@@ -504,7 +316,6 @@
       for (let i = 0; i < 16; i++) { const ang = i * Math.PI / 8; R(c, wx + Math.round(Math.cos(ang) * 5), wy + Math.round(Math.sin(ang) * 5), 1, 1, "#8a5a2b"); }
       const point = !REDUCED && (T % 9) < 2.2;
       person(c, 205, y, { ...LOOK.captain, dir: 1, hl: point ? [6, -7] : [-1, 4], hr: [8, 2] });
-      clampHit("captain", 205, y - 23, y);
     });
     // navigator with map and telescope
     add(116, () => {
@@ -513,7 +324,6 @@
       R(c, 278, y - 8, 8, 2, "#f0dfb0"); R(c, 283, y - 8, 1, 1, "#c8372d"); R(c, 279, y - 7, 3, 1, "#8a5a2b");
       person(c, 268, y, { ...LOOK.nav, dir: 1, hl: tele ? [3, -7] : [3, 1], hr: tele ? [4, -9] : [6, 3] });
       if (tele) { L(c, 272 + 4, y - 19, 272 + 11, y - 21, "#c9a45a"); R(c, 272 + 11, y - 22, 2, 3, GOLD); }
-      clampHit("nav", 268, y - 23, y);
     });
     // lookout in the crow's nest
     add(46, () => {
@@ -521,7 +331,6 @@
       person(c, 240, y, { ...LOOK.lookout, dir: d, hl: [d * 4, -4], hr: [d * 5, -5] });
       L(c, 240 + d * 9, y - 15, 240 + d * 15, y - 16, "#c9a45a"); R(c, 240 + d * 15, y - 17, 1, 3, GOLD);
       R(c, 232, y - 5, 17, 2, "#a9753a"); R(c, 233, y - 3, 15, 5, "#8a5a2b"); R(c, 233, y, 15, 1, "#5a2f14"); R(c, 233, y + 2, 15, 1, "#3d1f0c");
-      clampHit("lookout", 240, y - 24, y + 2);
     });
     // first mate hauling crates along the dock
     add(131, () => {
@@ -529,7 +338,6 @@
       const x = 124 + u * 32, st = REDUCED ? 0 : (Math.floor(T * 6) % 2 ? 1 : 2);
       person(c, x, 131, { ...LOOK.mate, dir: right ? 1 : -1, step: st, hl: right ? [4, -3] : [-1, (st === 1 ? 5 : 3)], hr: right ? [3, -3] : [1, (st === 1 ? 3 : 5)] });
       if (right) { R(c, x + 2, 131 - 14, 7, 6, "#c9a45a"); R(c, x + 2, 131 - 14, 7, 1, "#e0c27a"); R(c, x + 5, 131 - 14, 1, 6, "#8a6a2a"); }
-      clampHit("mate", x, 131 - 24, 131);
     });
     // quartermaster counting
     add(131, () => {
@@ -537,7 +345,6 @@
       person(c, 183, 131, { ...LOOK.qm, dir: -1, hl: [-4, -1], hr: [-3, -3 + t] });
       R(c, 183 - 11, 131 - 13, 6, 7, "#f0dfb0"); R(c, 183 - 11, 131 - 13, 6, 1, "#8a5a2b");
       R(c, 183 - 10, 131 - 11, 4, 1, "#8a7a5a"); R(c, 183 - 10, 131 - 9, 3, 1, "#8a7a5a");
-      clampHit("qm", 183, 131 - 22, 131);
     });
     // kid fishing
     add(143, () => {
@@ -548,7 +355,6 @@
       L(c, 143, 122, 143, 146 + bob, "#f4f4ee");
       R(c, 142, 145 + bob, 3, 2, "#c8372d"); R(c, 142, 145 + bob, 3, 1, "#fff");
       if (!REDUCED) { const r = Math.floor(T * 2) % 3; R(c, 140 - r, 149, 2 + r * 2 + 2, 1, "rgba(255,255,255,.55)"); }
-      clampHit("kid", 126, 143 - 22, 143);
     });
     // cook stirring over the fire
     add(150, () => {
@@ -566,7 +372,6 @@
         const ph = (T * 0.8 + k * 0.2) % 1, px = 62 + Math.sin(T + k) * 3 + ph * 7, py = y - 24 - ph * 28, s = 2 + Math.floor(ph * 3);
         R(c, px, py, s, s, "rgba(245,245,250," + (0.75 * (1 - ph)).toFixed(2) + ")");
       }
-      clampHit("cook", 48, y - 25, y);
     });
     // carpenter hammering
     add(166, () => {
@@ -578,7 +383,6 @@
       const hx = 84 + 4 + (up ? 4 : 8), hy = y - 10 + (up ? -7 : -1);
       R(c, hx, hy - 4, 1, 5, "#8a5a2b"); R(c, hx - 1, hy - 6, 4, 2, "#8a8a96");
       if (!up && ph < 0.78) { R(c, 96, y - 7, 1, 1, GOLD); R(c, 98, y - 8, 1, 1, "#fff2b0"); R(c, 94, y - 7, 1, 1, "#fff2b0"); }
-      clampHit("carp", 84, y - 24, y);
     });
     // gunner and cannon
     add(172, () => {
@@ -601,7 +405,6 @@
         const q = ph - 7.4;
         for (let i = 0; i < 4; i++) R(c, 204 + (i - 1.5) * 3 * (1 + q * 2), 170 - Math.sin(Math.min(1, q * 1.6) * Math.PI) * 8, 2, 2, "#e6f4ff");
       }
-      clampHit("gunner", 108, y - 24, y);
     });
     // treasure sparkle
     add(163, () => {
@@ -613,106 +416,28 @@
       const t = REDUCED ? 1.2 : T, px = 170 + 66 * Math.sin(t * 0.45), py = 64 + 10 * Math.sin(t * 0.9);
       const d = Math.cos(t * 0.45) >= 0 ? 1 : -1;
       parrot(c, px, py, d, REDUCED ? 0 : Math.floor(T * 8) % 2);
-      hits.parrot = { x0: px - 6, y0: py - 6, x1: px + 14, y1: py + 8 };
     });
 
     E.sort((a, b2) => a.y - b2.y).forEach(e => e.fn());
-
-    // marker over hovered / selected crew
-    [hoverId, selId].forEach((id, i) => {
-      const h = id && hits[id];
-      if (!h || (i === 1 && id === hoverId)) return;
-      const cx = Math.round((h.x0 + h.x1) / 2), bob = REDUCED ? 0 : Math.round(Math.sin(T * 5)), my = Math.max(1, Math.round(h.y0) - 7 + bob);
-      R(c, cx - 3, my - 1, 7, 1, DARK); R(c, cx - 2, my, 5, 1, DARK); R(c, cx - 1, my + 1, 3, 1, DARK); R(c, cx, my + 2, 1, 1, DARK);
-      R(c, cx - 2, my - 1, 5, 1, i ? "#c8372d" : GOLD); R(c, cx - 1, my, 3, 1, i ? "#c8372d" : GOLD); R(c, cx, my + 1, 1, 1, i ? "#c8372d" : GOLD);
-    });
   }
 
-  /* ================= portraits & dialogue ================= */
-  function portrait(canvas, id) {
-    const c = canvas.getContext("2d");
-    c.clearRect(0, 0, canvas.width, canvas.height);
-    const crew = byId[id];
-    if (!crew.look) { parrot(c, 6, 14, 1, 0, true); return; }
-    person(c, 12, 24, { ...LOOK[crew.look], dir: 1, hl: [-1, 4], hr: [1, 4] });
-  }
-
-  const faceCv = document.getElementById("face");
-  const dRank = document.getElementById("d-rank"), dWho = document.getElementById("d-who"), dSay = document.getElementById("d-say"), dGo = document.getElementById("d-go");
-  let typer = 0;
-  function type(text) {
-    clearInterval(typer);
-    if (REDUCED) { dSay.textContent = text; return; }
-    let i = 0; dSay.textContent = "";
-    typer = setInterval(() => { dSay.textContent = text.slice(0, ++i); if (i >= text.length) clearInterval(typer); }, 18);
-  }
-  function welcome() {
-    portrait(faceCv, "captain");
-    dRank.textContent = "SELAMAT DATANG"; dWho.textContent = "Ahoy, pendatang!"; dGo.hidden = true;
-    dSay.textContent = "Ini pulau kecil milik megawan. Klik salah satu awak kapal di gambar atau pilih dari daftar di bawah untuk berkenalan.";
-  }
-  function select(id) {
-    const c = byId[id]; if (!c) return;
-    selId = id;
-    portrait(faceCv, id);
-    dRank.textContent = c.rank; dWho.textContent = c.name;
-    if (c.link) { dGo.hidden = false; dGo.href = c.link[0]; dGo.textContent = c.link[1].toUpperCase(); } else dGo.hidden = true;
-    type(c.say);
-    document.querySelectorAll("#roster button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.id === id)));
-    if (REDUCED) draw(0);
-  }
-
-  /* ================= roster ================= */
-  const roster = document.getElementById("roster");
-  CREW.forEach(c => {
-    const li = document.createElement("li"), b = document.createElement("button");
-    b.type = "button"; b.dataset.id = c.id; b.setAttribute("aria-pressed", "false");
-    const cvs = document.createElement("canvas"); cvs.width = 24; cvs.height = 26; cvs.setAttribute("aria-hidden", "true");
-    const t = document.createElement("span");
-    t.innerHTML = '<span class="r"></span><span class="n"></span><span class="j"></span>';
-    t.children[0].textContent = c.rank; t.children[1].textContent = c.name; t.children[2].textContent = c.job;
-    b.append(cvs, t); li.append(b); roster.append(li);
-    portrait(cvs, c.id);
-    b.addEventListener("click", () => {
-      select(c.id);
-      document.getElementById("frame").scrollIntoView({ behavior: REDUCED ? "auto" : "smooth", block: "center" });
-    });
-  });
-
-  /* ================= interaction ================= */
-  function pick(e) {
-    const r = cv.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
-    let best = null, bd = 1e9;
-    for (const id in hits) {
-      const h = hits[id];
-      if (x >= h.x0 - 2 && x <= h.x1 + 2 && y >= h.y0 - 2 && y <= h.y1 + 2) {
-        const d = Math.abs(x - (h.x0 + h.x1) / 2) + Math.abs(y - (h.y0 + h.y1) / 2);
-        if (d < bd) { bd = d; best = id; }
-      }
-    }
-    return best;
-  }
-  cv.addEventListener("pointermove", e => {
-    const id = pick(e);
-    if (id !== hoverId) { hoverId = id; cv.classList.toggle("hit", !!id); if (REDUCED) draw(0); }
-  });
-  cv.addEventListener("pointerleave", () => { hoverId = null; cv.classList.remove("hit"); if (REDUCED) draw(0); });
-  cv.addEventListener("click", e => { const id = pick(e); if (id) select(id); });
-
-  // whole-number scaling on wide screens keeps pixels crisp
-  const frame = document.getElementById("frame");
+  /* ================= full-frame scaling ================= */
+  // Cover the viewport with a whole-number scale (crisp pixels). If that would crop too much of
+  // the scene, step down and let the sky/sea body background fill the letterbox.
   function fit() {
-    const w = document.querySelector(".wrap").clientWidth;
-    if (!w) { cv.style.width = ""; return; }
-    const avail = Math.min(980, w) - 28;
-    const k = avail >= 640 ? Math.floor(avail / 320) : Math.max(0.5, avail / 320);
-    cv.style.width = Math.floor(320 * k) + "px";
+    const vw = innerWidth, vh = innerHeight;
+    let s = Math.max(vw / W, vh / H);
+    if (s >= 2) {
+      s = Math.ceil(s);
+      if (vw / s < W * 0.8) s = Math.floor(Math.max(vw / W, vh / H));
+    } else if (vw / s < W * 0.8) s = vw / (W * 0.8);
+    if (s * W > vw * 1.25) s = vw * 1.25 / W; // never crop more than ~20% of the width
+    cv.style.width = Math.round(W * s) + "px";
+    cv.style.height = Math.round(H * s) + "px";
   }
-  addEventListener("resize", fit); addEventListener("load", fit); fit();
+  addEventListener("resize", fit); fit();
 
   /* ================= start ================= */
-  welcome();
   draw(0);
   if (!REDUCED) {
     let last = 0;
