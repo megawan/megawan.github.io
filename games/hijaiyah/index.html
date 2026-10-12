@@ -64,6 +64,14 @@
   .star { width: 44px; height: 44px; fill: var(--line); }
   .star.on { fill: var(--warm); }
   .note { font-size: .9rem; text-align: center; opacity: .75; margin-top: 10px; }
+  .lv { display: flex; justify-content: center; gap: 3px; margin-top: 2px; }
+  .lv i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+  .tile.l1 { background: #fdeceb; } .tile.l2 { background: #fff1d6; }
+  .tile.l3 { background: #f1f6d8; } .tile.l4 { background: #dff5e8; border-color: var(--accent); }
+  .tile.l1 .lv i:nth-child(-n+1), .tile.l2 .lv i:nth-child(-n+2),
+  .tile.l3 .lv i:nth-child(-n+3), .tile.l4 .lv i:nth-child(-n+4) { background: var(--accent); }
+  .legend { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; font-size: .85rem; margin: 12px 0; opacity: .85; }
+  .summary { text-align: center; font-weight: 700; margin: 8px 0; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -78,7 +86,9 @@
       <button class="btn alt" id="goSee" type="button">Tebak nama huruf</button>
       <button class="btn" id="goHarakat" type="button">Belajar harakat</button>
       <button class="btn alt" id="goHarQuiz" type="button">Tebak harakat</button>
+      <button class="btn ghost" id="goProgress" type="button">Peta progres</button>
     </div>
+    <p class="note" id="homeSummary"></p>
     <p class="note" id="voiceNote" hidden>Suara tidak bisa diputar di perangkat ini. Coba periksa volume dan mode senyap.</p>
   </section>
 
@@ -91,6 +101,18 @@
       <div class="row"><button class="btn" id="lPlay" type="button">Dengar lagi</button></div>
     </div>
     <div class="grid" id="grid"></div>
+  </section>
+
+  <section id="progress" hidden>
+    <div class="bar"><button class="btn ghost" data-home type="button">Kembali</button></div>
+    <div class="tabs" id="pTabs">
+      <button class="tab on" type="button" data-p="0">Huruf</button>
+      <button class="tab" type="button" data-p="1">Harakat</button>
+    </div>
+    <p class="summary" id="pSummary"></p>
+    <div class="grid" id="pGrid"></div>
+    <div class="legend" aria-hidden="true"><span>Belum dicoba</span><span>Sedang belajar</span><span>Hampir hafal</span><span>Hafal</span></div>
+    <div class="stack"><button class="btn ghost" id="reset" type="button">Hapus progres</button></div>
   </section>
 
   <section id="quiz" hidden>
@@ -156,7 +178,7 @@
 
   const $ = (id) => document.getElementById(id);
   const AUDIO_BASE = 'audio/'; // can point to any folder or URL that serves the same file names
-  const sections = ['home', 'learn', 'quiz', 'result'].map($);
+  const sections = ['home', 'learn', 'quiz', 'result', 'progress'].map($);
   function show(id) { sections.forEach((s) => { s.hidden = s.id !== id; }); window.scrollTo(0, 0); }
 
   // ---- Sound ----
@@ -245,13 +267,48 @@
     for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
     return a;
   }
+  // ---- Progress ----
+  // Each entry has a level 0..4: +1 for a first-try answer, -1 for a mistake.
+  // Keys: "i" for a letter, "i:h" for a letter with harakat h (1..3).
+  const STORE_KEY = 'hijaiyah.progress.v1', MAX_LV = 4;
+  let store = {};
+  try { store = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { store = {}; }
+  function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) { /* private mode */ } }
+  function level(key) { return (store[key] && store[key].lv) || 0; }
+  function record(key, ok) {
+    const e = store[key] || (store[key] = { lv: 0, wrong: 0 });
+    e.lv = Math.max(0, Math.min(MAX_LV, e.lv + (ok ? 1 : -1)));
+    if (!ok) e.wrong++;
+    save();
+  }
+  function letterLevel(i, h) {
+    if (h === 0) return level(String(i));
+    return Math.round([1, 2, 3].reduce((a, v) => a + level(i + ':' + v), 0) / 3);
+  }
+  // Weighted sample without replacement: weaker items are likelier to be chosen.
+  function weightedPick(items, weightOf, n) {
+    const pool = items.map((it) => ({ it, w: weightOf(it) })), out = [];
+    while (out.length < n && pool.length) {
+      let r = Math.random() * pool.reduce((a, p) => a + p.w, 0), k = 0;
+      for (; k < pool.length - 1; k++) { r -= pool[k].w; if (r <= 0) break; }
+      out.push(pool.splice(k, 1)[0].it);
+    }
+    return out;
+  }
+  const weightFor = (lv) => 1 + (MAX_LV - lv) * 2;
+  function qKey() { return mode === 'harakat' ? order[qi].i + ':' + order[qi].h : String(LETTERS.indexOf(answer)); }
+
   function startQuiz(m) {
     mode = m; qi = 0; score = 0;
     if (m === 'harakat') {
-      // Pick a letter and a vowel for each round; options are the three vowels of that letter.
-      order = shuffle(LETTERS.map((_, i) => i)).slice(0, ROUNDS).map((i) => ({ i, h: 1 + Math.floor(Math.random() * 3) }));
+      // Weak letters come up more often, and each gets the vowel it knows least.
+      const letters = weightedPick(LETTERS.map((_, i) => i), (i) => weightFor(letterLevel(i, 1)), ROUNDS);
+      order = letters.map((i) => {
+        const hs = shuffle([1, 2, 3]).sort((a, b) => level(i + ':' + a) - level(i + ':' + b));
+        return { i, h: hs[0] };
+      });
     } else {
-      order = shuffle(LETTERS.slice()).slice(0, ROUNDS);
+      order = weightedPick(LETTERS.map((l, i) => i), (i) => weightFor(level(String(i))), ROUNDS).map((i) => LETTERS[i]);
     }
     $('prog').innerHTML = order.map(() => '<i></i>').join('');
     show('quiz'); nextQ();
@@ -294,11 +351,12 @@
     if (btn.classList.contains('ok')) return;
     if (c.name === answer.name && c.say === answer.say) {
       btn.classList.add('ok'); sfx.good();
-      if (!wrongThis) score++;
+      if (!wrongThis) { score++; record(qKey(), true); }
       if (qKind === 'see' || mode === 'see') speak(answer);
       qi++;
       setTimeout(() => (qi < order.length ? nextQ() : finish()), 900);
     } else {
+      if (!wrongThis) record(qKey(), false);
       wrongThis = true; btn.classList.add('no'); sfx.bad();
       setTimeout(() => btn.classList.remove('no'), 400);
     }
@@ -313,14 +371,52 @@
   $('qPlay').addEventListener('click', () => speak(answer));
   $('again').addEventListener('click', () => startQuiz(mode));
 
+  // ---- Progress map ----
+  let pH = 0;
+  function renderProgress() {
+    const grid = $('pGrid');
+    if (!grid.children.length) {
+      LETTERS.forEach((l) => {
+        const t = document.createElement('div');
+        t.className = 'tile';
+        t.innerHTML = '<span class="ar" lang="ar"></span><div class="lv"><i></i><i></i><i></i><i></i></div>';
+        grid.appendChild(t);
+      });
+    }
+    let done = 0;
+    [...grid.children].forEach((t, i) => {
+      const lv = letterLevel(i, pH ? 1 : 0);
+      if (lv === MAX_LV) done++;
+      t.className = 'tile' + (lv ? ' l' + lv : '');
+      t.firstChild.textContent = pH ? form(i, 1).ch : LETTERS[i].ch;
+      t.setAttribute('aria-label', LETTERS[i].name + ', tingkat ' + lv + ' dari ' + MAX_LV);
+    });
+    $('pSummary').textContent = 'Hafal: ' + done + ' dari 28 huruf';
+    [...$('pTabs').children].forEach((b, i) => b.classList.toggle('on', i === pH));
+  }
+  // Harakat level is the average of the three vowels, so the grid shows fathah as the sample glyph.
+  $('pTabs').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-p]'); if (!b) return;
+    pH = Number(b.dataset.p); renderProgress();
+  });
+  $('reset').addEventListener('click', () => {
+    if (window.confirm('Hapus semua progres belajar?')) { store = {}; save(); renderProgress(); homeSummary(); }
+  });
+  function homeSummary() {
+    const n = LETTERS.filter((_, i) => level(String(i)) === MAX_LV).length;
+    $('homeSummary').textContent = n ? 'Huruf yang sudah hafal: ' + n + ' dari 28' : '';
+  }
+  homeSummary();
+
   // ---- Navigation ----
+  $('goProgress').addEventListener('click', () => { pH = 0; renderProgress(); show('progress'); });
   $('goLearn').addEventListener('click', () => { audioCtx(); learnH = 0; show('learn'); renderLearn(); });
   $('goHarakat').addEventListener('click', () => { audioCtx(); learnH = 1; show('learn'); renderLearn(); });
   $('goHarQuiz').addEventListener('click', () => { audioCtx(); startQuiz('harakat'); });
   $('goHear').addEventListener('click', () => { audioCtx(); startQuiz('hear'); });
   $('goSee').addEventListener('click', () => { audioCtx(); startQuiz('see'); });
   document.querySelectorAll('[data-home]').forEach((b) => b.addEventListener('click', () => {
-    if ('speechSynthesis' in window) speechSynthesis.cancel(); show('home');
+    if ('speechSynthesis' in window) speechSynthesis.cancel(); homeSummary(); show('home');
   }));
 })();
 </script>
