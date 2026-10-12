@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Belajar Huruf Hijaiyah</title>
-<meta name="description" content="Game sederhana untuk anak belajar mengenal dan menghafal 28 huruf hijaiyah, lengkap dengan suara.">
+<title>Learn Hijaiyah Letters</title>
+<meta name="description" content="A simple game for children to learn and memorise the 28 hijaiyah letters, with sound.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Baloo+2:wght@500;700&display=swap" rel="stylesheet">
@@ -31,7 +31,7 @@
   .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--accent-d); }
   .btn.alt { background: var(--warm); box-shadow: 0 5px 0 var(--warm-d); }
   .btn.ghost { background: rgba(255,255,255,.7); color: var(--ink); box-shadow: none; border: 2px solid var(--line); }
-  .btn:focus-visible, .tile:focus-visible, .tab:focus-visible, .opt:focus-visible, .card:focus-visible { outline: 3px solid var(--c-blue); outline-offset: 2px; }
+  .btn:focus-visible, .mcard:focus-visible, .tile:focus-visible, .tab:focus-visible, .opt:focus-visible, .card:focus-visible { outline: 3px solid var(--c-blue); outline-offset: 2px; }
   .stack { display: grid; gap: 14px; max-width: 420px; margin: 20px auto; }
   .bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
   .bar .btn { padding: 8px 16px; min-height: 46px; font-size: 1rem; box-shadow: none; }
@@ -138,6 +138,20 @@
   .group .row { display: flex; justify-content: center; margin-top: 10px; }
   .group .btn { padding: 8px 20px; min-height: 46px; font-size: 1rem; }
 
+  /* Memory */
+  .mstat { font-weight: 700; }
+  .mgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .mcard { aspect-ratio: 3 / 4; min-height: 96px; display: grid; place-items: center; padding: 0 2px;
+    background: var(--c-blue); color: #fff; border: 3px solid transparent; border-bottom-width: 6px;
+    border-radius: var(--radius); font: inherit; font-size: 2rem; font-weight: 700; cursor: pointer;
+    transition: transform .1s; }
+  .mcard:active { transform: scale(.96); }
+  .mcard .ar { font-size: 2.6rem; line-height: 2.2; color: var(--ink); }
+  .mcard:not(.up):not(.done)::before { content: "?"; font-size: 2.6rem; color: rgba(255,255,255,.85); }
+  .mcard .nm { font-size: 1.5rem; color: var(--ink); line-height: 1.1; word-break: break-word; }
+  .mcard.up { background: var(--card); border-color: var(--line); animation: pop .3s; }
+  .mcard.done { background: #dff5e8; border-color: var(--accent); }
+
   /* Confetti */
   #fx { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 10; }
   #fx i { position: absolute; top: -12px; width: 10px; height: 14px; border-radius: 2px; opacity: 0;
@@ -164,64 +178,80 @@
         <path class="m smile" d="M36 62 Q50 76 64 62"/>
       </svg>
       <div>
-        <h1>Belajar Huruf Hijaiyah</h1>
-        <p class="sub">Ayo belajar sambil bermain</p>
+        <h1>Learn Hijaiyah Letters</h1>
+        <p class="sub">Let's learn while we play</p>
       </div>
     </div>
-    <div class="center"><span class="total" aria-label="Total bintang"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.5 7 .9-5.2 4.8 1.4 7L12 17.8 5.8 21.2l1.4-7L2 9.4l7-.9z"/></svg><span id="totalStars">0</span> bintang</span></div>
+    <div class="center"><span class="total" aria-label="Total stars"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.5 7 .9-5.2 4.8 1.4 7L12 17.8 5.8 21.2l1.4-7L2 9.4l7-.9z"/></svg><span id="totalStars">0</span> stars</span></div>
     <div class="menu">
       <button class="card" id="goLearn" type="button" style="--c: var(--c-green)">
-        <span class="badge"><span class="ar" lang="ar">ب</span></span><b>Belajar huruf</b><small>Ketuk untuk mendengar</small></button>
+        <span class="badge"><span class="ar" lang="ar">ب</span></span><b>Learn letters</b><small>Tap to hear</small></button>
       <button class="card" id="goHarakat" type="button" style="--c: var(--c-teal)">
-        <span class="badge"><span class="ar" lang="ar">بُ</span></span><b>Belajar harakat</b><small>Fathah, kasrah, dammah</small></button>
+        <span class="badge"><span class="ar" lang="ar">بُ</span></span><b>Learn harakat</b><small>Fathah, kasrah, dammah</small></button>
       <button class="card" id="goHear" type="button" style="--c: var(--c-orange)">
-        <span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3zm13.5 3a4.5 4.5 0 00-2.5-4v8a4.5 4.5 0 002.5-4zM14 3.2v2.1a7 7 0 010 13.4v2.1a9 9 0 000-17.6z"/></svg></span><b>Tebak suara</b><small>Dengar, lalu pilih</small></button>
+        <span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9H3zm13.5 3a4.5 4.5 0 00-2.5-4v8a4.5 4.5 0 002.5-4zM14 3.2v2.1a7 7 0 010 13.4v2.1a9 9 0 000-17.6z"/></svg></span><b>Guess the sound</b><small>Listen, then choose</small></button>
       <button class="card" id="goSee" type="button" style="--c: var(--c-pink)">
-        <span class="badge"><span class="ar" lang="ar">؟</span></span><b>Tebak nama</b><small>Lihat, lalu pilih namanya</small></button>
+        <span class="badge"><span class="ar" lang="ar">؟</span></span><b>Guess the name</b><small>Look, then pick the name</small></button>
       <button class="card" id="goHarQuiz" type="button" style="--c: var(--c-purple)">
-        <span class="badge"><span class="ar" lang="ar">بِ</span></span><b>Tebak harakat</b><small>Fathah, kasrah, dammah</small></button>
+        <span class="badge"><span class="ar" lang="ar">بِ</span></span><b>Guess the harakat</b><small>Fathah, kasrah, dammah</small></button>
       <button class="card" id="goSimilar" type="button" style="--c: var(--c-blue)">
-        <span class="badge"><span class="ar" lang="ar">بت</span></span><b>Huruf mirip</b><small>Bedakan yang hampir sama</small></button>
-      <button class="card wide" id="goProgress" type="button" style="--c: var(--c-orange)">
-        <span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.5 7 .9-5.2 4.8 1.4 7L12 17.8 5.8 21.2l1.4-7L2 9.4l7-.9z"/></svg></span><b>Peta kemajuan</b></button>
+        <span class="badge"><span class="ar" lang="ar">بت</span></span><b>Look-alikes</b><small>Tell similar letters apart</small></button>
+      <button class="card" id="goMemory" type="button" style="--c: var(--c-teal)">
+        <span class="badge"><span class="ar" lang="ar">أب</span></span><b>Match pairs</b><small>Flip cards, find the pairs</small></button>
+      <button class="card" id="goProgress" type="button" style="--c: var(--c-orange)">
+        <span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.5 7 .9-5.2 4.8 1.4 7L12 17.8 5.8 21.2l1.4-7L2 9.4l7-.9z"/></svg></span><b>Progress map</b></button>
     </div>
     <p class="note" id="homeSummary"></p>
-    <p class="note" id="voiceNote" hidden>Suara tidak bisa diputar di perangkat ini. Coba periksa volume dan mode senyap.</p>
+    <p class="note" id="voiceNote" hidden>Sound cannot play on this device. Check the volume and silent mode.</p>
   </section>
 
   <section id="learn" hidden>
-    <div class="bar"><button class="btn ghost" data-home type="button">Kembali</button></div>
+    <div class="bar"><button class="btn ghost" data-home type="button">Back</button></div>
     <div class="tabs" id="tabs"></div>
     <div class="stage">
       <div class="big ar" id="lBig">ا</div>
       <div class="name" id="lName">Alif</div>
-      <div class="row"><button class="btn" id="lPlay" type="button">Dengar lagi</button></div>
+      <div class="row"><button class="btn" id="lPlay" type="button">Listen again</button></div>
     </div>
     <div class="grid" id="grid"></div>
   </section>
 
+  <section id="memory" hidden>
+    <div class="bar">
+      <button class="btn ghost" data-home type="button">Back</button>
+      <div class="mstat" id="mStat" aria-live="polite"></div>
+    </div>
+    <div class="tabs" id="mTabs">
+      <button class="tab" type="button" data-m="4">Easy</button>
+      <button class="tab on" type="button" data-m="6">Medium</button>
+      <button class="tab" type="button" data-m="8">Hard</button>
+    </div>
+    <p class="sub">Match each letter with its name.</p>
+    <div class="mgrid" id="mGrid"></div>
+  </section>
+
   <section id="similar" hidden>
-    <div class="bar"><button class="btn ghost" data-home type="button">Kembali</button></div>
-    <h1>Huruf yang mirip</h1>
-    <p class="sub">Perhatikan titiknya. Ketuk huruf untuk mendengar, lalu berlatih.</p>
+    <div class="bar"><button class="btn ghost" data-home type="button">Back</button></div>
+    <h1>Look-alike letters</h1>
+    <p class="sub">Look at the dots. Tap a letter to hear it, then practise.</p>
     <div id="groups"></div>
   </section>
 
   <section id="progress" hidden>
-    <div class="bar"><button class="btn ghost" data-home type="button">Kembali</button></div>
+    <div class="bar"><button class="btn ghost" data-home type="button">Back</button></div>
     <div class="tabs" id="pTabs">
-      <button class="tab on" type="button" data-p="0">Huruf</button>
+      <button class="tab on" type="button" data-p="0">Letters</button>
       <button class="tab" type="button" data-p="1">Harakat</button>
     </div>
     <p class="summary" id="pSummary"></p>
     <div class="grid" id="pGrid"></div>
-    <div class="legend" aria-hidden="true"><span>Belum dicoba</span><span>Sedang belajar</span><span>Hampir hafal</span><span>Hafal</span></div>
-    <div class="stack"><button class="btn ghost" id="reset" type="button">Hapus kemajuan</button></div>
+    <div class="legend" aria-hidden="true"><span>Not tried</span><span>Learning</span><span>Almost there</span><span>Mastered</span></div>
+    <div class="stack"><button class="btn ghost" id="reset" type="button">Reset progress</button></div>
   </section>
 
   <section id="quiz" hidden>
     <div class="bar">
-      <button class="btn ghost" data-home type="button">Kembali</button>
+      <button class="btn ghost" data-home type="button">Back</button>
       <div class="prog" id="prog" aria-hidden="true"></div>
       <div class="streak" id="streak" aria-live="polite"></div>
     </div>
@@ -235,25 +265,25 @@
         <path class="m big" d="M34 60 Q50 84 66 60 Z"/>
         <path class="m oops" d="M38 72 Q50 60 62 72"/>
       </svg>
-      <div class="bubble" id="say" aria-live="polite">Ayo mulai!</div>
+      <div class="bubble" id="say" aria-live="polite">Let's start!</div>
     </div>
     <div class="stage" id="qStage">
       <div class="big ar" id="qBig"></div>
       <div class="name" id="qPrompt"></div>
-      <div class="row"><button class="btn" id="qPlay" type="button">Dengar lagi</button></div>
+      <div class="row"><button class="btn" id="qPlay" type="button">Listen again</button></div>
     </div>
     <div class="opts" id="opts"></div>
   </section>
 
   <section id="result" hidden>
     <div class="stage">
-      <h1 id="rTitle">Hebat!</h1>
+      <h1 id="rTitle">Great job!</h1>
       <p class="name" id="rText"></p>
       <div class="stars" id="rStars"></div>
     </div>
     <div class="stack">
-      <button class="btn" id="again" type="button">Main lagi</button>
-      <button class="btn ghost" data-home type="button">Menu utama</button>
+      <button class="btn" id="again" type="button">Play again</button>
+      <button class="btn ghost" data-home type="button">Main menu</button>
     </div>
   </section>
 </main>
@@ -273,13 +303,13 @@
     ['ط', 'طاء', 'Tho', 'tho'], ['ظ', 'ظاء', 'Zho', 'zho'], ['ع', 'عين', "'Ain", 'ain'],
     ['غ', 'غين', 'Ghain', 'ghain'], ['ف', 'فاء', 'Fa', 'fa'], ['ق', 'قاف', 'Qaf', 'qaf'],
     ['ك', 'كاف', 'Kaf', 'kaf'], ['ل', 'لام', 'Lam', 'lam'], ['م', 'ميم', 'Mim', 'mim'],
-    ['ن', 'نون', 'Nun', 'nun'], ['و', 'واو', 'Wau', 'wau'], ['ه', 'هاء', 'Ha (Ha kecil)', 'ha2'],
+    ['ن', 'نون', 'Nun', 'nun'], ['و', 'واو', 'Wau', 'wau'], ['ه', 'هاء', 'Ha (small Ha)', 'ha2'],
     ['ي', 'ياء', 'Ya', 'ya']
   ].map((r, i) => ({ ch: r[0], say: r[1], name: r[2], file: String(i + 1).padStart(2, '0') + '-' + r[3] + '.mp3' }));
 
   // Harakat: 0 = plain letter, then fathah, kasrah, dammah.
   const MARKS = [
-    { key: '', mark: '', title: 'Huruf', vowel: '' },
+    { key: '', mark: '', title: 'Letter', vowel: '' },
     { key: 'fathah', mark: '\u064E', title: 'Fathah', vowel: 'a' },
     { key: 'kasrah', mark: '\u0650', title: 'Kasrah', vowel: 'i' },
     { key: 'dammah', mark: '\u064F', title: 'Dammah', vowel: 'u' }
@@ -296,7 +326,7 @@
 
   const $ = (id) => document.getElementById(id);
   const AUDIO_BASE = 'audio/'; // can point to any folder or URL that serves the same file names
-  const sections = ['home', 'learn', 'quiz', 'result', 'progress', 'similar'].map($);
+  const sections = ['home', 'learn', 'quiz', 'result', 'progress', 'similar', 'memory'].map($);
   function show(id) { sections.forEach((s) => { s.hidden = s.id !== id; }); window.scrollTo(0, 0); }
 
   // ---- Sound ----
@@ -383,8 +413,8 @@
   let wrongCount = 0, streak = 0, simGroup = 0, correctBtn = null, roundLen = ROUNDS;
 
   // ---- Feedback: mascot, messages, confetti ----
-  const PRAISE = ['Hebat!', 'Pintar sekali!', 'Betul!', 'Keren!', 'Mantap!', 'Kamu bisa!'];
-  const RETRY = ['Hampir! Coba lagi', 'Dengar sekali lagi, ya', 'Tidak apa-apa, coba lagi'];
+  const PRAISE = ['Great job!', 'Very smart!', 'Correct!', 'Awesome!', 'Well done!', 'You can do it!'];
+  const RETRY = ['Almost! Try again', 'Listen once more', 'That is okay, try again'];
   const sample = (a) => a[Math.floor(Math.random() * a.length)];
   function mood(m, text) {
     $('coachMascot').setAttribute('data-mood', m);
@@ -414,10 +444,10 @@
   }
 
   // Letters that look alike apart from their dots, with a short description of the dots.
-  const DOTS = { 1: '1 titik di bawah', 2: '2 titik di atas', 3: '3 titik di atas', 24: '1 titik di atas', 27: '2 titik di bawah',
-    4: '1 titik di bawah', 5: 'tanpa titik', 6: '1 titik di atas', 7: 'tanpa titik', 8: '1 titik di atas',
-    9: 'tanpa titik', 10: '1 titik di atas', 11: 'tanpa titik', 12: '3 titik di atas', 13: 'tanpa titik', 14: '1 titik di atas',
-    15: 'tanpa titik', 16: '1 titik di atas', 17: 'tanpa titik', 18: '1 titik di atas', 19: '1 titik di atas', 20: '2 titik di atas' };
+  const DOTS = { 1: '1 dot below', 2: '2 dots above', 3: '3 dots above', 24: '1 dot above', 27: '2 dots below',
+    4: '1 dot below', 5: 'no dots', 6: '1 dot above', 7: 'no dots', 8: '1 dot above',
+    9: 'no dots', 10: '1 dot above', 11: 'no dots', 12: '3 dots above', 13: 'no dots', 14: '1 dot above',
+    15: 'no dots', 16: '1 dot above', 17: 'no dots', 18: '1 dot above', 19: '1 dot above', 20: '2 dots above' };
   const GROUPS = [[1, 2, 3, 24, 27], [4, 5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16], [17, 18], [19, 20]];
 
   function shuffle(a) {
@@ -481,7 +511,7 @@
   }
   function nextQ() {
     wrongThis = false; wrongCount = 0; correctBtn = null;
-    mood('happy', qi === 0 ? 'Ayo mulai!' : 'Soal berikutnya');
+    mood('happy', qi === 0 ? 'Let\'s start!' : 'Next question');
     [...$('prog').children].forEach((p, i) => p.classList.toggle('done', i < qi));
     let choices, hear, label;
     if (mode === 'harakat') {
@@ -491,19 +521,19 @@
       hear = qKind === 'hear';
       choices = [1, 2, 3].map((h) => form(q.i, h));
       if (!hear) choices = choices.map((c) => ({ ch: c.name, say: c.say, name: c.name, file: c.file, text: true }));
-      label = hear ? 'Harakat apa yang kamu dengar?' : 'Bagaimana cara membaca ini?';
+      label = hear ? 'Which harakat do you hear?' : 'How do you read this?';
     } else if (mode === 'similar') {
       answer = order[qi];
       qKind = Math.random() < 0.6 ? 'hear' : 'see';
       hear = qKind === 'hear';
       const peers = GROUPS[simGroup].map((x) => LETTERS[x]).filter((l) => l !== answer);
       choices = shuffle([answer].concat(shuffle(peers).slice(0, 3)));
-      label = hear ? 'Huruf apa yang kamu dengar?' : 'Apa nama huruf ini?';
+      label = hear ? 'Which letter do you hear?' : 'What is the name of this letter?';
     } else {
       answer = order[qi];
       hear = mode === 'hear';
       choices = shuffle([answer].concat(shuffle(LETTERS.filter((l) => l !== answer)).slice(0, 3)));
-      label = hear ? 'Huruf apa yang kamu dengar?' : 'Apa nama huruf ini?';
+      label = hear ? 'Which letter do you hear?' : 'What is the name of this letter?';
     }
     if (mode !== 'harakat' && mode !== 'similar') qKind = hear ? 'hear' : 'see';
     $('qBig').textContent = hear ? '' : answer.ch;
@@ -529,11 +559,11 @@
       btn.classList.add('ok'); sfx.good();
       if (!wrongThis) {
         score++; record(qKey(), true); streak++;
-        mood('cheer', streak >= 3 ? 'Beruntun ' + streak + '! Luar biasa!' : sample(PRAISE));
+        mood('cheer', streak >= 3 ? 'Streak of ' + streak + '! Amazing!' : sample(PRAISE));
         confetti(streak >= 3 ? 36 : 16);
       } else {
         streak = 0;
-        mood('happy', 'Sekarang kamu tahu!');
+        mood('happy', 'Now you know!');
       }
       $('streak').textContent = streak >= 2 ? 'x' + streak : '';
       if (qKind === 'see') speak(answer);
@@ -547,21 +577,25 @@
       mood('oops', sample(RETRY));
       setTimeout(() => btn.classList.remove('no'), 400);
       // After two misses, make the right answer blink so the child can still finish the question.
-      if (wrongCount >= 2 && correctBtn) { correctBtn.classList.add('hint'); $('say').textContent = 'Petunjuk: pilih yang berkedip'; }
+      if (wrongCount >= 2 && correctBtn) { correctBtn.classList.add('hint'); $('say').textContent = 'Hint: pick the blinking one'; }
     }
   }
   function finish() {
     const ratio = score / order.length;
     const n = ratio >= 0.9 ? 3 : ratio >= 0.6 ? 2 : 1;
+    showResult(n, n === 3 ? 'Amazing!' : n === 2 ? 'Great job!' : 'Good try, play again!',
+      'Right on the first try: ' + score + ' of ' + order.length);
+  }
+  function showResult(n, title, text) {
     addStars(n);
-    $('rTitle').textContent = n === 3 ? 'Luar biasa!' : n === 2 ? 'Hebat!' : 'Bagus, ayo coba lagi!';
-    $('rText').textContent = 'Benar langsung: ' + score + ' dari ' + order.length;
+    $('rTitle').textContent = title;
+    $('rText').textContent = text;
     $('rStars').innerHTML = [1, 2, 3].map((i) =>
       '<svg class="star' + (i <= n ? ' on' : '') + '" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.5 7 .9-5.2 4.8 1.4 7L12 17.8 5.8 21.2l1.4-7L2 9.4l7-.9z"/></svg>').join('');
     sfx.win(); show('result'); confetti(n === 3 ? 70 : 30);
   }
   $('qPlay').addEventListener('click', () => speak(answer));
-  $('again').addEventListener('click', () => startQuiz(mode));
+  $('again').addEventListener('click', () => (mode === 'memory' ? startMemory(mem.pairs) : startQuiz(mode)));
 
   // ---- Progress map ----
   let pH = 0;
@@ -581,9 +615,9 @@
       if (lv === MAX_LV) done++;
       t.className = 'tile' + (lv ? ' l' + lv : '');
       t.firstChild.textContent = pH ? form(i, 1).ch : LETTERS[i].ch;
-      t.setAttribute('aria-label', LETTERS[i].name + ', tingkat ' + lv + ' dari ' + MAX_LV);
+      t.setAttribute('aria-label', LETTERS[i].name + ', level ' + lv + ' of ' + MAX_LV);
     });
-    $('pSummary').textContent = 'Hafal: ' + done + ' dari 28 huruf';
+    $('pSummary').textContent = 'Mastered: ' + done + ' of 28 letters';
     [...$('pTabs').children].forEach((b, i) => b.classList.toggle('on', i === pH));
   }
   // Harakat level is the average of the three vowels, so the grid shows fathah as the sample glyph.
@@ -592,14 +626,71 @@
     pH = Number(b.dataset.p); renderProgress();
   });
   $('reset').addEventListener('click', () => {
-    if (window.confirm('Hapus semua kemajuan belajar?')) { store = {}; save(); renderProgress(); homeSummary(); }
+    if (window.confirm('Reset all learning progress?')) { store = {}; save(); renderProgress(); homeSummary(); }
   });
   function homeSummary() {
     const n = LETTERS.filter((_, i) => level(String(i)) === MAX_LV).length;
-    $('homeSummary').textContent = n ? 'Huruf yang sudah hafal: ' + n + ' dari 28' : '';
+    $('homeSummary').textContent = n ? 'Letters mastered: ' + n + ' of 28' : '';
     $('totalStars').textContent = totalStars;
   }
   homeSummary();
+
+  // ---- Match pairs ----
+  const mem = { pairs: 6, cards: [], open: [], moves: 0, matched: 0, lock: false, missed: new Set() };
+  function memStat() {
+    $('mStat').textContent = 'Moves: ' + mem.moves + '  Pairs: ' + mem.matched + '/' + mem.pairs;
+  }
+  function startMemory(pairs) {
+    mode = 'memory'; mem.pairs = pairs; mem.open = []; mem.moves = 0; mem.matched = 0; mem.lock = false; mem.missed = new Set();
+    // Letters the child knows least are likelier to appear.
+    const picks = weightedPick(LETTERS.map((_, i) => i), (i) => weightFor(level(String(i))), pairs);
+    mem.cards = shuffle(picks.reduce((a, i) => a.concat([{ i, kind: 'ch' }, { i, kind: 'name' }]), []));
+    const grid = $('mGrid'); grid.innerHTML = '';
+    mem.cards.forEach((c) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'mcard'; b.setAttribute('aria-label', 'Hidden card');
+      b.addEventListener('click', () => flip(c, b));
+      c.el = b; grid.appendChild(b);
+    });
+    [...$('mTabs').children].forEach((t) => t.classList.toggle('on', Number(t.dataset.m) === pairs));
+    memStat(); show('memory');
+  }
+  function flip(c, b) {
+    if (mem.lock || b.classList.contains('up') || b.classList.contains('done')) return;
+    const l = LETTERS[c.i];
+    b.classList.add('up');
+    if (c.kind === 'ch') { b.innerHTML = '<span class="ar" lang="ar"></span>'; b.firstChild.textContent = l.ch; }
+    else { b.innerHTML = '<span class="nm"></span>'; b.firstChild.textContent = l.name; }
+    b.setAttribute('aria-label', l.name);
+    speak(l);
+    mem.open.push(c);
+    if (mem.open.length < 2) return;
+    mem.moves++; memStat();
+    const [x, y] = mem.open; mem.open = [];
+    if (x.i === y.i) {
+      [x, y].forEach((k) => { k.el.classList.remove('up'); k.el.classList.add('done'); });
+      mem.matched++; memStat(); sfx.good(); confetti(14);
+      if (!mem.missed.has(x.i)) record(String(x.i), true);
+      if (mem.matched === mem.pairs) setTimeout(finishMemory, 900);
+    } else {
+      mem.lock = true; mem.missed.add(x.i); mem.missed.add(y.i);
+      record(String(x.i), false); record(String(y.i), false);
+      sfx.bad();
+      setTimeout(() => {
+        [x, y].forEach((k) => { k.el.classList.remove('up'); k.el.textContent = ''; k.el.setAttribute('aria-label', 'Hidden card'); });
+        mem.lock = false;
+      }, 1000);
+    }
+  }
+  function finishMemory() {
+    const p = mem.pairs;
+    const n = mem.moves <= p + Math.ceil(p / 2) ? 3 : mem.moves <= p * 2 ? 2 : 1;
+    showResult(n, n === 3 ? 'Amazing memory!' : n === 2 ? 'Great job!' : 'Well done!',
+      'All ' + p + ' pairs found in ' + mem.moves + ' moves');
+  }
+  $('mTabs').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-m]'); if (b) startMemory(Number(b.dataset.m));
+  });
 
   // ---- Similar letters ----
   function renderSimilar() {
@@ -622,7 +713,7 @@
       });
       const act = document.createElement('div'); act.className = 'row';
       const b = document.createElement('button');
-      b.type = 'button'; b.className = 'btn alt'; b.textContent = 'Berlatih';
+      b.type = 'button'; b.className = 'btn alt'; b.textContent = 'Practise';
       b.addEventListener('click', () => { audioCtx(); simGroup = gi; startQuiz('similar'); });
       act.appendChild(b);
       el.appendChild(row); el.appendChild(act);
@@ -631,6 +722,7 @@
   }
 
   // ---- Navigation ----
+  $('goMemory').addEventListener('click', () => { audioCtx(); startMemory(mem.pairs); });
   $('goSimilar').addEventListener('click', () => { audioCtx(); renderSimilar(); show('similar'); });
   $('goProgress').addEventListener('click', () => { pH = 0; renderProgress(); show('progress'); });
   $('goLearn').addEventListener('click', () => { audioCtx(); learnH = 0; show('learn'); renderLearn(); });

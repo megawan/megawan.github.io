@@ -1,26 +1,31 @@
-# Belajar Huruf Hijaiyah
+# Learn Hijaiyah Letters
 
-Game sederhana untuk mengenal 28 huruf hijaiyah dan harakatnya. Mode:
+A small game for children to learn the 28 hijaiyah letters and their harakat.
 
-- Belajar: ketuk huruf untuk melihat dan mendengar namanya.
-- Belajar harakat: tab Fathah, Kasrah, Dammah menampilkan dan membunyikan tiap huruf dengan harakat.
-- Tebak dari suara, Tebak nama huruf, Tebak harakat.
+## Modes
 
-## Suara
+- Learn letters: tap a letter to see it and hear its name.
+- Learn harakat: the Fathah, Kasrah and Dammah tabs show and play each letter with its vowel.
+- Guess the sound, Guess the name, Guess the harakat: ten-question quizzes.
+- Look-alikes: groups of letters that differ only by dots, with a short practice for each group.
+- Match pairs: flip cards to match each letter with its name (easy, medium, hard).
+- Progress map: shows how well each letter is known. Weak letters appear more often in quizzes.
 
-Rekaman ada di `audio/` (112 file mp3 kecil). Dibuat dengan suara Arab bawaan macOS (Majed).
+## Sound
 
-| Pola nama file | Isi |
+Recordings live in `audio/` (112 small mp3 files), generated with the macOS Arabic voice (Majed).
+
+| File name pattern | Content |
 | --- | --- |
-| `NN-nama.mp3`, mis. `02-ba.mp3` | nama huruf |
-| `NN-fathah.mp3` | huruf dengan fathah (ba) |
-| `NN-kasrah.mp3` | huruf dengan kasrah (bi) |
-| `NN-dammah.mp3` | huruf dengan dammah (bu) |
+| `NN-name.mp3`, for example `02-ba.mp3` | letter name |
+| `NN-fathah.mp3` | letter with fathah (ba) |
+| `NN-kasrah.mp3` | letter with kasrah (bi) |
+| `NN-dammah.mp3` | letter with dammah (bu) |
 
-NN adalah nomor huruf 01 sampai 28 (01 alif, 02 ba, 03 ta, dst). Untuk pelafalan yang lebih baik, ganti file mana pun dengan rekaman sendiri dengan nama yang sama.
+NN is the letter number from 01 to 28 (01 alif, 02 ba, 03 ta, and so on). To improve pronunciation, replace any file with your own recording using the same name.
 
-Jika file tidak ditemukan, game memakai suara bahasa Arab bawaan perangkat sebagai cadangan.
+If a file is missing, the game falls back to the device's Arabic speech voice.
 
-## Huruf mirip
+## Look-alike groups
 
-Menu "Huruf mirip" mengelompokkan huruf yang bentuknya hampir sama dan hanya berbeda pada titiknya (misalnya ب ت ث, ج ح خ, ص ض). Setiap kelompok punya kartu penjelasan titik dan latihan 8 soal. Kelompok didefinisikan di konstanta `GROUPS` dan `DOTS` pada `index.html`.
+Groups are defined by the `GROUPS` and `DOTS` constants in `index.html`.
