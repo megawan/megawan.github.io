@@ -8,6 +8,7 @@ A small game for children to learn the 28 hijaiyah letters and their harakat.
 - Learn harakat: the Fathah, Kasrah and Dammah tabs show and play each letter with its vowel.
 - Guess the sound, Guess the name, Guess the harakat: ten-question quizzes.
 - Look-alikes: groups of letters that differ only by dots, with a short practice for each group.
+- Letter shapes: shows each letter alone and at the beginning, middle and end of a word, with a quiz. Letters that do not join to the next one (alif, dal, dzal, ra, zai, wau) only show two shapes. Shapes are drawn with a zero-width joiner, so they depend on the font's joining rules.
 - Match pairs: flip cards to match each letter with its name (easy, medium, hard).
 - Progress map: shows how well each letter is known. Weak letters appear more often in quizzes.
 

@@ -31,7 +31,7 @@
   .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--accent-d); }
   .btn.alt { background: var(--warm); box-shadow: 0 5px 0 var(--warm-d); }
   .btn.ghost { background: rgba(255,255,255,.7); color: var(--ink); box-shadow: none; border: 2px solid var(--line); }
-  .btn:focus-visible, .mcard:focus-visible, .tile:focus-visible, .tab:focus-visible, .opt:focus-visible, .card:focus-visible { outline: 3px solid var(--c-blue); outline-offset: 2px; }
+  .btn:focus-visible, .fcard:focus-visible, .mcard:focus-visible, .tile:focus-visible, .tab:focus-visible, .opt:focus-visible, .card:focus-visible { outline: 3px solid var(--c-blue); outline-offset: 2px; }
   .stack { display: grid; gap: 14px; max-width: 420px; margin: 20px auto; }
   .bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
   .bar .btn { padding: 8px 16px; min-height: 46px; font-size: 1rem; box-shadow: none; }
@@ -138,6 +138,16 @@
   .group .row { display: flex; justify-content: center; margin-top: 10px; }
   .group .btn { padding: 8px 20px; min-height: 46px; font-size: 1rem; }
 
+  /* Letter shapes */
+  .fgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 8px; }
+  .fcard { background: var(--card); border: 2px solid var(--line); border-radius: var(--radius); padding: 8px 4px;
+    text-align: center; font: inherit; color: inherit; cursor: pointer; }
+  .fcard .ar { display: block; font-size: 3.2rem; }
+  .fcard b { display: block; font-size: .95rem; }
+  .fcard small { display: block; font-size: .75rem; opacity: .75; }
+  .fcard.off { opacity: .45; cursor: default; }
+  .fcard.off .ar { visibility: hidden; height: 3.2rem; }
+
   /* Memory */
   .mstat { font-weight: 700; }
   .mgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
@@ -196,9 +206,11 @@
         <span class="badge"><span class="ar" lang="ar">بِ</span></span><b>Guess the harakat</b><small>Fathah, kasrah, dammah</small></button>
       <button class="card" id="goSimilar" type="button" style="--c: var(--c-blue)">
         <span class="badge"><span class="ar" lang="ar">بت</span></span><b>Look-alikes</b><small>Tell similar letters apart</small></button>
+      <button class="card" id="goForms" type="button" style="--c: var(--c-pink)">
+        <span class="badge"><span class="ar" lang="ar">ـبـ</span></span><b>Letter shapes</b><small>Start, middle and end</small></button>
       <button class="card" id="goMemory" type="button" style="--c: var(--c-teal)">
         <span class="badge"><span class="ar" lang="ar">أب</span></span><b>Match pairs</b><small>Flip cards, find the pairs</small></button>
-      <button class="card" id="goProgress" type="button" style="--c: var(--c-orange)">
+      <button class="card wide" id="goProgress" type="button" style="--c: var(--c-orange)">
         <span class="badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.5 7 .9-5.2 4.8 1.4 7L12 17.8 5.8 21.2l1.4-7L2 9.4l7-.9z"/></svg></span><b>Progress map</b></button>
     </div>
     <p class="note" id="homeSummary"></p>
@@ -214,6 +226,15 @@
       <div class="row"><button class="btn" id="lPlay" type="button">Listen again</button></div>
     </div>
     <div class="grid" id="grid"></div>
+  </section>
+
+  <section id="forms" hidden>
+    <div class="bar"><button class="btn ghost" data-home type="button">Back</button></div>
+    <h1>Letter shapes</h1>
+    <p class="sub">A letter changes its shape depending on where it sits in a word. Tap a shape to hear the letter.</p>
+    <div class="fgrid" id="fGrid"></div>
+    <div class="stack"><button class="btn alt" id="fPractise" type="button">Practise shapes</button></div>
+    <div class="grid" id="fPick"></div>
   </section>
 
   <section id="memory" hidden>
@@ -326,7 +347,7 @@
 
   const $ = (id) => document.getElementById(id);
   const AUDIO_BASE = 'audio/'; // can point to any folder or URL that serves the same file names
-  const sections = ['home', 'learn', 'quiz', 'result', 'progress', 'similar', 'memory'].map($);
+  const sections = ['home', 'learn', 'quiz', 'result', 'progress', 'similar', 'memory', 'forms'].map($);
   function show(id) { sections.forEach((s) => { s.hidden = s.id !== id; }); window.scrollTo(0, 0); }
 
   // ---- Sound ----
@@ -448,6 +469,14 @@
     4: '1 dot below', 5: 'no dots', 6: '1 dot above', 7: 'no dots', 8: '1 dot above',
     9: 'no dots', 10: '1 dot above', 11: 'no dots', 12: '3 dots above', 13: 'no dots', 14: '1 dot above',
     15: 'no dots', 16: '1 dot above', 17: 'no dots', 18: '1 dot above', 19: '1 dot above', 20: '2 dots above' };
+  // Contextual shapes: 0 alone, 1 beginning, 2 middle, 3 end. A zero-width joiner asks the font to join on that side.
+  const POS = ['Alone', 'Beginning', 'Middle', 'End'];
+  const NO_LINK = [0, 7, 8, 9, 10, 25]; // alif, dal, dzal, ra, zai, wau do not join to the letter after them
+  function shape(i, f) {
+    const ch = LETTERS[i].ch;
+    return f === 0 ? ch : f === 1 ? ch + '\u200D' : f === 2 ? '\u200D' + ch + '\u200D' : '\u200D' + ch;
+  }
+  let fType = 'letter';
   const GROUPS = [[1, 2, 3, 24, 27], [4, 5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16], [17, 18], [19, 20]];
 
   function shuffle(a) {
@@ -483,7 +512,10 @@
     return out;
   }
   const weightFor = (lv) => 1 + (MAX_LV - lv) * 2;
-  function qKey() { return mode === 'harakat' ? order[qi].i + ':' + order[qi].h : String(LETTERS.indexOf(answer)); }
+  function qKey() {
+    if (mode === 'forms') return (fType === 'letter' ? '' : 'f') + order[qi].i;
+    return mode === 'harakat' ? order[qi].i + ':' + order[qi].h : String(LETTERS.indexOf(answer));
+  }
 
   function startQuiz(m) {
     mode = m; qi = 0; score = 0; streak = 0; roundLen = ROUNDS;
@@ -496,6 +528,13 @@
           (x) => weightFor(level(String(x))), 1);
         order.push(LETTERS[i]);
       }
+    } else if (m === 'forms') {
+      // Letters that join get all four shapes; letters that do not join only have two.
+      const letters = weightedPick(LETTERS.map((_, i) => i), (i) => weightFor(level(String(i))), ROUNDS);
+      order = letters.map((i) => {
+        const opts = NO_LINK.includes(i) ? [0, 3] : [0, 1, 2, 3];
+        return { i, f: sample(opts), t: Math.random() < 0.5 ? 'letter' : 'pos' };
+      });
     } else if (m === 'harakat') {
       // Weak letters come up more often, and each gets the vowel it knows least.
       const letters = weightedPick(LETTERS.map((_, i) => i), (i) => weightFor(letterLevel(i, 1)), ROUNDS);
@@ -513,8 +552,23 @@
     wrongThis = false; wrongCount = 0; correctBtn = null;
     mood('happy', qi === 0 ? 'Let\'s start!' : 'Next question');
     [...$('prog').children].forEach((p, i) => p.classList.toggle('done', i < qi));
-    let choices, hear, label;
-    if (mode === 'harakat') {
+    let choices, hear, label, bigText = null, arOpts = null;
+    if (mode === 'forms') {
+      const q = order[qi];
+      fType = q.f === 0 ? 'letter' : q.t;
+      hear = false; qKind = 'see';
+      bigText = shape(q.i, q.f); arOpts = fType === 'letter';
+      if (fType === 'letter') {
+        answer = LETTERS[q.i];
+        choices = shuffle([answer].concat(shuffle(LETTERS.filter((l) => l !== answer)).slice(0, 3)));
+        label = 'Which letter is this shape?';
+      } else {
+        const avail = NO_LINK.includes(q.i) ? [0, 3] : [0, 1, 2, 3];
+        answer = { name: POS[q.f], say: POS[q.f] };
+        choices = avail.map((f) => ({ ch: '', name: POS[f], say: POS[f] }));
+        label = 'Where in a word does this shape go?';
+      }
+    } else if (mode === 'harakat') {
       const q = order[qi];
       answer = form(q.i, q.h);
       qKind = Math.random() < 0.5 ? 'hear' : 'see';
@@ -535,9 +589,10 @@
       choices = shuffle([answer].concat(shuffle(LETTERS.filter((l) => l !== answer)).slice(0, 3)));
       label = hear ? 'Which letter do you hear?' : 'What is the name of this letter?';
     }
-    if (mode !== 'harakat' && mode !== 'similar') qKind = hear ? 'hear' : 'see';
-    $('qBig').textContent = hear ? '' : answer.ch;
-    $('qBig').hidden = hear;
+    if (mode !== 'harakat' && mode !== 'similar' && mode !== 'forms') qKind = hear ? 'hear' : 'see';
+    if (arOpts === null) arOpts = hear;
+    $('qBig').textContent = bigText !== null ? bigText : (hear ? '' : answer.ch);
+    $('qBig').hidden = bigText === null && hear;
     $('qPrompt').textContent = label;
     $('qPlay').hidden = !hear;
     $('opts').innerHTML = '';
@@ -545,7 +600,7 @@
     choices.forEach((c) => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'opt';
-      if (hear) { b.innerHTML = '<span class="ar" lang="ar"></span>'; b.firstChild.textContent = c.ch; b.setAttribute('aria-label', c.name); }
+      if (arOpts) { b.innerHTML = '<span class="ar" lang="ar"></span>'; b.firstChild.textContent = c.ch; b.setAttribute('aria-label', c.name); }
       else { b.textContent = c.name; }
       b.addEventListener('click', () => pick(b, c));
       if (c.name === answer.name && c.say === answer.say) correctBtn = b;
@@ -566,7 +621,7 @@
         mood('happy', 'Now you know!');
       }
       $('streak').textContent = streak >= 2 ? 'x' + streak : '';
-      if (qKind === 'see') speak(answer);
+      if (qKind === 'see') speak(mode === 'forms' ? LETTERS[order[qi].i] : answer);
       correctBtn = null;
       qi++;
       setTimeout(() => (qi < order.length ? nextQ() : finish()), 1100);
@@ -634,6 +689,34 @@
     $('totalStars').textContent = totalStars;
   }
   homeSummary();
+
+  // ---- Letter shapes ----
+  let fIdx = 1;
+  function renderForms() {
+    const g = $('fGrid'); g.innerHTML = '';
+    [0, 1, 2, 3].forEach((f) => {
+      const off = NO_LINK.includes(fIdx) && (f === 1 || f === 2);
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'fcard' + (off ? ' off' : '');
+      b.innerHTML = '<span class="ar" lang="ar"></span><b></b><small></small>';
+      b.children[0].textContent = shape(fIdx, f);
+      b.children[1].textContent = POS[f];
+      b.children[2].textContent = off ? 'does not join' : '';
+      b.setAttribute('aria-label', POS[f] + (off ? ', does not join' : ''));
+      if (!off) b.addEventListener('click', () => speak(LETTERS[fIdx]));
+      g.appendChild(b);
+    });
+    [...$('fPick').children].forEach((t, i) => t.classList.toggle('on', i === fIdx));
+  }
+  LETTERS.forEach((l, i) => {
+    const t = document.createElement('button');
+    t.type = 'button'; t.className = 'tile';
+    t.innerHTML = '<span class="ar" lang="ar"></span><small></small>';
+    t.firstChild.textContent = l.ch; t.lastChild.textContent = l.name;
+    t.addEventListener('click', () => { fIdx = i; renderForms(); speak(l); });
+    $('fPick').appendChild(t);
+  });
+  $('fPractise').addEventListener('click', () => { audioCtx(); startQuiz('forms'); });
 
   // ---- Match pairs ----
   const mem = { pairs: 6, cards: [], open: [], moves: 0, matched: 0, lock: false, missed: new Set() };
@@ -722,6 +805,7 @@
   }
 
   // ---- Navigation ----
+  $('goForms').addEventListener('click', () => { audioCtx(); renderForms(); show('forms'); });
   $('goMemory').addEventListener('click', () => { audioCtx(); startMemory(mem.pairs); });
   $('goSimilar').addEventListener('click', () => { audioCtx(); renderSimilar(); show('similar'); });
   $('goProgress').addEventListener('click', () => { pH = 0; renderProgress(); show('progress'); });
