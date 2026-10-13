@@ -2,10 +2,10 @@ name: HTML
 
 on:
   pull_request:
-    paths: ["**/*.html"]
+    paths: ["**/*.html", ".github/workflows/html-validate.yml"]
   push:
     branches: [main]
-    paths: ["**/*.html"]
+    paths: ["**/*.html", ".github/workflows/html-validate.yml"]
   workflow_dispatch:
 
 permissions: {}
