@@ -65,7 +65,8 @@
   .card.wide { grid-column: 1 / -1; flex-direction: row; justify-content: center; gap: 12px; padding: 10px; }
   .card.wide .badge { width: 48px; height: 48px; }
 
-  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  /* Arabic reads right to left, so letter lists start at the right. */
+  .grid { direction: rtl; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   @media (min-width: 560px) { .grid { grid-template-columns: repeat(7, 1fr); } }
   .tile { background: var(--card); border: 2px solid var(--line); border-radius: var(--radius);
     padding: 6px 0 8px; text-align: center; cursor: pointer; font: inherit; color: inherit;
@@ -139,7 +140,7 @@
 
   /* Similar letters */
   .group { background: var(--card); border: 2px solid var(--line); border-radius: var(--radius); padding: 12px; margin-bottom: 14px; }
-  .group .letters { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .group .letters { direction: rtl; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
   .group .tile { flex: 1 1 0; min-width: 84px; max-width: 130px; padding-bottom: 8px; }
   .group .tile small.dots { font-size: .75rem; opacity: .8; line-height: 1.15; padding: 0 4px; }
   .group .row { display: flex; justify-content: center; margin-top: 10px; }
@@ -174,7 +175,7 @@
   .vrow .tab { min-height: 40px; font-size: .85rem; padding: 4px 2px; }
 
   /* Letter shapes */
-  .fgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 8px; }
+  .fgrid { direction: rtl; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 8px; }
   .fcard { background: var(--card); border: 2px solid var(--line); border-radius: var(--radius); padding: 8px 4px;
     text-align: center; font: inherit; color: inherit; cursor: pointer; }
   .fcard .ar { display: block; font-size: 3.2rem; }
@@ -380,14 +381,14 @@
   // File names are the fallback order: optional recording first, then speech synthesis.
   const LETTERS = [
     ['ا', 'أَلِفْ', 'Alif', 'alif'], ['ب', 'بَاءْ', 'Ba', 'ba'], ['ت', 'تَاءْ', 'Ta', 'ta'],
-    ['ث', 'ثَاءْ', 'Tsa', 'tsa'], ['ج', 'جِيمْ', 'Jim', 'jim'], ['ح', 'حَاءْ', 'Ha', 'ha'],
+    ['ث', 'ثَاءْ', 'Tsa', 'tsa'], ['ج', 'جِيمْ', 'Jim', 'jim'], ['ح', 'حَاءْ', 'Ha (small Ha)', 'ha'],
     ['خ', 'خَاءْ', 'Kho', 'kho'], ['د', 'دَالْ', 'Dal', 'dal'], ['ذ', 'ذَالْ', 'Dzal', 'dzal'],
     ['ر', 'رَاءْ', 'Ra', 'ra'], ['ز', 'زَايْ', 'Zai', 'zai'], ['س', 'سِينْ', 'Sin', 'sin'],
     ['ش', 'شِينْ', 'Syin', 'syin'], ['ص', 'صَادْ', 'Shad', 'shad'], ['ض', 'ضَادْ', 'Dhad', 'dhad'],
     ['ط', 'طَاءْ', 'Tho', 'tho'], ['ظ', 'ظَاءْ', 'Zho', 'zho'], ['ع', 'عَيْنْ', "'Ain", 'ain'],
     ['غ', 'غَيْنْ', 'Ghain', 'ghain'], ['ف', 'فَاءْ', 'Fa', 'fa'], ['ق', 'قَافْ', 'Qaf', 'qaf'],
     ['ك', 'كَافْ', 'Kaf', 'kaf'], ['ل', 'لَمْ', 'Lam', 'lam'], ['م', 'مِيمْ', 'Mim', 'mim'],
-    ['ن', 'نُونْ', 'Nun', 'nun'], ['و', 'وَاوْ', 'Wau', 'wau'], ['ه', 'هَاءْ', 'Ha (small Ha)', 'ha2'],
+    ['ن', 'نُونْ', 'Nun', 'nun'], ['و', 'وَاوْ', 'Wau', 'wau'], ['ه', 'هَاءْ', 'Ha', 'ha2'],
     ['ي', 'يَاءْ', 'Ya', 'ya']
   ].map((r, i) => ({ ch: r[0], say: r[1], name: r[2], file: String(i + 1).padStart(2, '0') + '-' + r[3] + '.mp3' }));
 
