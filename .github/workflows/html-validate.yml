@@ -1,0 +1,22 @@
+name: HTML
+
+on:
+  pull_request:
+    paths: ["**/*.html"]
+  push:
+    branches: [main]
+    paths: ["**/*.html"]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  validate:
+    permissions:
+      contents: read
+    uses: megawan/gha-shared-workflows/.github/workflows/site-html-validate.yml@v1
+    with:
+      paths: "**/*.html"
+      # Stylistic rules are relaxed; structure and accessibility rules stay on.
+      # aria-label-misuse is a warning until games/hijaiyah/index.html:231 is fixed.
+      rules: no-inline-style:off,doctype-style:off,aria-label-misuse:warn
