@@ -165,6 +165,9 @@
   .scroll h2 { margin: 0 0 0.6rem; font-family: var(--display); font-weight: 400; font-size: 2.6rem; line-height: 1; }
   .scroll p { margin: 0 0 0.9rem; font-size: 1.25rem; line-height: 1.6; }
   .scroll .soon { font-style: italic; opacity: 0.75; }
+  .scroll .projects { margin: 0 0 0.9rem; padding-left: 1.2rem; font-size: 1.25rem; line-height: 1.5; }
+  .scroll .projects li { margin-bottom: 0.6rem; }
+  .scroll .projects small { opacity: 0.8; font-size: 1rem; }
   .scroll .harbor { display: block; width: 100%; aspect-ratio: 4 / 3; max-height: 55vh; border: 3px solid var(--ink); background: #2a74bd; margin: 0 0 1rem; image-rendering: pixelated; }
   .scroll a { color: #7a1d16; }
   .scroll .close {
@@ -209,7 +212,7 @@
 
 <body>
 <canvas id="sea" role="img"
-        aria-label="A sailing game: a pirate ship on the sea with four islands. The buttons at the top open the same content without sailing."></canvas>
+        aria-label="A sailing game: a pirate ship on the sea with five islands. The buttons at the top open the same content without sailing."></canvas>
 <div id="labels" aria-hidden="true"></div>
 
 <header class="hud top">
@@ -218,6 +221,7 @@
     <button class="btn" type="button" data-open="cloud-cove">Cloud Cove</button>
     <button class="btn" type="button" data-open="logbook-bay">Logbook Bay</button>
     <button class="btn" type="button" data-open="treasure-island">Treasure Island</button>
+    <button class="btn" type="button" data-open="tinkers-atoll">Tinker's Atoll</button>
     <button class="btn" type="button" id="night" aria-pressed="false">Night</button>
     <button class="btn" type="button" id="sound" aria-pressed="true">Sound</button>
   </nav>
@@ -292,9 +296,16 @@
   <h2>Logbook Bay</h2>
   <p>Short write-ups of problems I've solved and written so I can find them again later.</p>
   <p class="soon">The first entries are on their way.</p>
-  <p>Meanwhile, the bay has a small game for little sailors: <a href="games/hijaiyah/">Belajar Huruf Hijaiyah</a>, 28 letters with their vowel marks and sounds.</p>
   <!-- EDIT: when you have a post, replace the line above with a link, e.g.
        <p><a href="/posts/my-first-post.html">Why my workflow ignored the tag push</a></p> -->
+</template>
+<template id="tpl-tinkers-atoll">
+  <h2>Tinker's Atoll</h2>
+  <p>Small projects and games, made to be played or picked apart. New ones wash ashore here now and then.</p>
+  <!-- EDIT: add each new project as another list item. -->
+  <ul class="projects">
+    <li><a href="games/hijaiyah/">Belajar Huruf Hijaiyah</a><br><small>A learning game for kids: 28 hijaiyah letters with their vowel marks and sounds.</small></li>
+  </ul>
 </template>
 <template id="tpl-treasure-island">
   <h2>Treasure Island</h2>
@@ -387,6 +398,7 @@ const ISLANDS = [
   { id: 'cloud-cove',    name: 'Cloud Cove',    x: 780,  y: 330, r: 80,  phase: 4.1, seed: 22 },
   { id: 'logbook-bay',   name: 'Logbook Bay',   x: 1020, y: 850, r: 75,  phase: 2.2, seed: 33 },
   { id: 'treasure-island', name: 'Treasure Island', x: 1500, y: 400, r: 105, phase: 5.5, seed: 44 },
+  { id: 'tinkers-atoll', name: "Tinker's Atoll", x: 1560, y: 880, r: 72, phase: 3.3, seed: 55 },
 ];
 const byId = Object.fromEntries(ISLANDS.map(i => [i.id, i]));
 const landR = (isl, a) => isl.r * (1 + 0.22 * Math.sin(3 * a + isl.phase) + 0.12 * Math.sin(5 * a + isl.phase * 2.1) + 0.06 * Math.sin(9 * a + isl.phase * 0.7));
@@ -449,6 +461,14 @@ function book(c, x, y) {
   c.fillStyle = '#efe3c2'; c.fillRect(x - 8, y - 5, 8, 10); c.fillRect(x + 1, y - 5, 7, 10);
   c.fillStyle = '#c9b98f'; for (let i = 0; i < 4; i++) { c.fillRect(x - 7, y - 3 + i * 2, 6, 1); c.fillRect(x + 2, y - 3 + i * 2, 5, 1); }
   c.fillStyle = '#2a1c10'; c.fillRect(x, y - 6, 1, 12);
+}
+function gamepad(c, x, y) {
+  c.fillStyle = 'rgba(0,0,0,.28)'; c.fillRect(x - 8, y - 2, 19, 12);
+  c.fillStyle = '#2a1c10'; c.fillRect(x - 10, y - 6, 20, 12);
+  c.fillStyle = '#c9402f'; c.fillRect(x - 9, y - 5, 18, 10);
+  c.fillStyle = '#16323a'; c.fillRect(x - 5, y - 4, 10, 6);
+  c.fillStyle = '#7fe0a8'; c.fillRect(x - 4, y - 3, 3, 1); c.fillRect(x + 1, y - 1, 3, 1); c.fillRect(x - 2, y, 2, 1);
+  c.fillStyle = '#ffd25a'; c.fillRect(x - 8, y + 3, 2, 1); c.fillRect(x + 6, y + 3, 2, 1);
 }
 function dish(c, x, y) {
   c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(x - 2, y + 1, 9, 6);
@@ -513,6 +533,10 @@ function buildLand() {
       const [hx, hy] = at(-12, -6);  hut(lctx, hx, hy, '#6b7a3a', '#56652d');
       isl.lights.push({ x: hx, y: hy, r: 34, rgb: '255,200,110', a: 0.5 });
       const [bx, by] = at(14, 12);   book(lctx, bx, by);
+    } else if (isl.id === 'tinkers-atoll') {
+      const [hx, hy] = at(-12, -6);  hut(lctx, hx, hy, '#8a4aa8', '#733a8c');
+      isl.lights.push({ x: hx, y: hy, r: 34, rgb: '210,160,255', a: 0.5 });
+      const [gx, gy] = at(14, 12);   gamepad(lctx, gx, gy);
     } else if (isl.id === 'treasure-island') {
       const [cx, cy] = at(0, -16);   chest(lctx, cx, cy);
       isl.lights.push({ x: cx, y: cy, r: 44, rgb: '255,205,80', a: 0.6 });
