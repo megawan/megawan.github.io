@@ -18,5 +18,4 @@ jobs:
     with:
       paths: "**/*.html"
       # Stylistic rules are relaxed; structure and accessibility rules stay on.
-      # aria-label-misuse is a warning until games/hijaiyah/index.html:231 is fixed.
-      rules: no-inline-style:off,doctype-style:off,aria-label-misuse:warn
+      rules: no-inline-style:off,doctype-style:off
