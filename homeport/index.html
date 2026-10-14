@@ -32,16 +32,25 @@
   const rnd = i => { const s = Math.sin(i * 12.9898 + 4.1) * 43758.5453; return s - Math.floor(s); };
   const mkc = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
   const R = (c, x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), w, h); };
+  // Bresenham line with the "pixel-perfect" clean-up: no L-shaped double steps, so diagonals stay crisp.
   function L(c, x0, y0, x1, y1, col) {
     x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
     const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+    const pts = [];
     let e = dx + dy;
     for (;;) {
-      R(c, x0, y0, 1, 1, col);
+      pts.push([x0, y0]);
       if (x0 === x1 && y0 === y1) break;
       const e2 = 2 * e;
       if (e2 >= dy) { e += dy; x0 += sx; }
       if (e2 <= dx) { e += dx; y0 += sy; }
+    }
+    let last = pts[0];
+    R(c, last[0], last[1], 1, 1, col);
+    for (let i = 1; i < pts.length; i++) {
+      const n = pts[i + 1];
+      if (n && Math.abs(n[0] - last[0]) === 1 && Math.abs(n[1] - last[1]) === 1) continue;
+      last = pts[i]; R(c, last[0], last[1], 1, 1, col);
     }
   }
   const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
@@ -182,7 +191,7 @@
       N(224, 58, "steer", 7, "u"), N(236, 58, "look", 1.5, "d"), N(236, 104), N(236, 128), N(176, 128, "point", 4, "d"),
       N(236, 128), N(236, 104), N(236, 58)
     ]),
-    mate: mkRoute([N(214, 128, "pick", 1.2, "u", true), N(214, 160, "put", 1.2, "l", false)]),
+    mate: mkRoute([N(185, 126, "pick", 1.2, "u", true), N(214, 126, null, 0, "r", true), N(214, 160, "put", 1.2, "l", false), N(214, 126, null, 0, "u", false)]),
     nav: mkRoute([N(241, 140, "map", 6, "r"), N(241, 114, "scope", 5, "u")]),
     qm: mkRoute([N(276, 170, "write", 6, "r"), N(276, 154, "write", 4, "u")]),
     cook: mkRoute([N(118, 166, "stir", 7, "r"), N(118, 182), N(152, 182), N(152, 156, "taste", 3, "r"), N(152, 182), N(118, 182)]),
@@ -192,19 +201,47 @@
   };
 
   /* ================= static sprites (outlined) ================= */
-  const TREE = spr(34, 38, s => {
-    R(s, 5, 32, 24, 5, "rgba(0,40,0,.25)");
-    R(s, 14, 26, 5, 10, "#6b3b1a"); R(s, 14, 26, 2, 10, "#8a5a2b"); R(s, 12, 34, 3, 2, "#6b3b1a"); R(s, 19, 34, 3, 2, "#6b3b1a");
-    for (let y = 0; y < 30; y++) for (let x = 0; x < 34; x++) {
-      const dx = (x - 17) / 16, dy = (y - 15) / 14, d = dx * dx + dy * dy;
-      if (d > 1) continue;
-      const v = dx * 0.6 + dy * 0.9;
-      let col = d > 0.8 ? "#2d7a2c" : v < -0.45 ? "#8bd653" : v < -0.05 ? "#5db440" : v < 0.45 ? "#418f33" : "#2f7329";
-      if (((x + y) & 1) && Math.abs(v + 0.05) < 0.12) col = "#5db440";
-      R(s, x, y, 1, 1, col);
+  // Round leaf clump, lit from the upper left; overlapping clumps give the scalloped Stardew canopy.
+  function clump(g, cx, cy, r, pal) {
+    for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
+      const d = Math.sqrt(x * x + y * y);
+      if (d > r + 0.3) continue;
+      const l = (-x * 0.6 - y * 0.8) / r;   // +1 upper left .. -1 lower right
+      let col = pal.mid;
+      if (d > r - 1.1) col = l < -0.15 ? pal.rim : pal.hi;
+      else if (l > 0.38 + (((x + y) & 1) ? 0.12 : -0.12)) col = pal.hi;
+      else if (l < -0.4 + (((x + y) & 1) ? 0.12 : -0.12)) col = pal.lo;
+      R(g, cx + x, cy + y, 1, 1, col);
     }
-    [[10, 12], [22, 18], [16, 22], [25, 9], [8, 20]].forEach(([x, y]) => { R(s, x, y, 2, 2, "#e8453a"); R(s, x, y, 1, 1, "#ff9a8a"); });
+  }
+  const OAK = (pal, fruit) => spr(44, 46, g => {
+    R(g, 8, 38, 28, 6, "rgba(0,40,0,.25)");
+    // trunk with roots and bark
+    R(g, 19, 28, 6, 14, "#6b3b1a"); R(g, 19, 28, 2, 14, "#8a5a2b"); R(g, 23, 28, 2, 14, "#4e2a12");
+    R(g, 16, 40, 4, 3, "#6b3b1a"); R(g, 24, 40, 4, 3, "#4e2a12"); R(g, 20, 33, 1, 3, "#4e2a12"); R(g, 22, 36, 1, 3, "#8a5a2b");
+    // canopy: back clumps first
+    [[22, 12, 9], [12, 16, 8], [32, 16, 8], [17, 9, 7], [28, 9, 7], [22, 19, 10], [10, 23, 6], [34, 23, 6], [22, 26, 7]].forEach(([x, y, r]) => clump(g, x, y, r, pal));
+    if (fruit) [[14, 16], [29, 20], [21, 24], [32, 13], [11, 24], [22, 12]].forEach(([x, y]) => { R(g, x, y, 2, 2, "#e8453a"); R(g, x, y, 1, 1, "#ffa090"); });
   }, "#1c4a22");
+  const PAL_A = { hi: "#9be05a", mid: "#5db440", lo: "#3f8f33", rim: "#2a6a2a" };
+  const PAL_B = { hi: "#a8d850", mid: "#6fb23f", lo: "#4a9238", rim: "#2f6e2e" };
+  const PINE = spr(30, 46, g => {
+    R(g, 5, 38, 20, 6, "rgba(0,40,0,.25)");
+    R(g, 13, 34, 4, 9, "#6b3b1a"); R(g, 13, 34, 1, 9, "#8a5a2b"); R(g, 16, 34, 1, 9, "#4e2a12");
+    [[3, 24, 24], [6, 15, 18], [9, 6, 12]].forEach(([y, , w], t) => {
+      const top = [4, 12, 20][t], h = [11, 12, 14][t] + 2, cx = 15;
+      for (let r = 0; r < h; r++) {
+        const half = Math.round((r + 1) / h * (w / 2 + 1));
+        for (let x = -half; x <= half; x++) {
+          const l = -x / (half + 1) * 0.7 - r / h * 0.3;
+          R(g, cx + x, top + r, 1, 1, r === h - 1 || x === half ? "#1f5a2a" : l > 0.25 ? "#5cb34a" : l < -0.3 ? "#2c7a38" : "#3f9a42");
+        }
+      }
+    });
+  }, "#163a1e");
+  const TREES = [OAK(PAL_A, true), OAK(PAL_B, false), PINE];
+  TREES[0]._ax = 22; TREES[0]._ay = 42; TREES[1]._ax = 22; TREES[1]._ay = 42; TREES[2]._ax = 15; TREES[2]._ay = 43;
+  const tree = (c, i, x, y) => { const t = TREES[i % 3]; blit(c, t, x - t._ax, y - t._ay); };
   const BUSH = spr(20, 14, s => {
     R(s, 1, 11, 18, 3, "rgba(0,40,0,.22)");
     for (let y = 0; y < 12; y++) for (let x = 0; x < 20; x++) {
@@ -256,7 +293,7 @@
     R(s, 2, 12, 3, 5, "#5a2f14"); R(s, 23, 12, 3, 5, "#5a2f14");
     R(s, 0, 4, 28, 9, "#a9753a"); R(s, 0, 4, 28, 1, "#d2a35e"); R(s, 0, 12, 28, 1, "#6e3b1a");
     R(s, 3, 5, 18, 6, "#f0dfb0"); R(s, 3, 5, 18, 1, "#fff3d0"); R(s, 15, 7, 2, 1, "#c8372d"); R(s, 16, 6, 1, 3, "#c8372d");
-    L(s, 5, 9, 12, 7, "#2f6fb0"); R(s, 23, 5, 4, 4, GOLD); R(s, 24, 6, 2, 2, "#8a5a00");
+    L(s, 5, 9, 13, 9, "#2f6fb0"); R(s, 23, 5, 4, 4, GOLD); R(s, 24, 6, 2, 2, "#8a5a00");
   }, EDGE);
   const BENCH = spr(32, 18, s => {
     R(s, 1, 15, 30, 3, "rgba(0,40,0,.22)");
@@ -310,7 +347,7 @@
     if (y < SHORE + 22) continue;                                 // land only
     if (PADPROPS.some(q => Math.abs(q.x - x) < 34 && Math.abs(q.y - y) < 26)) continue;   // no overlapping clumps
     const r = rnd(i + 1200);
-    PADPROPS.push({ x, y, k: r < 0.55 ? "tree" : r < 0.85 ? "bush" : "stone" });
+    PADPROPS.push({ x, y, k: r < 0.55 ? "tree" : r < 0.85 ? "bush" : "stone", v: Math.floor(rnd(i + 1300) * 3) });
   }
   PADPROPS.sort((a, b) => a.y - b.y);
 
@@ -403,22 +440,48 @@
 
   /* ================= dynamic bits ================= */
   const SC = mkc(64, 64), SG = SC.getContext("2d");           // crew scratch (feet at 32,48)
-  const SHC = mkc(132, 96), SHG = SHC.getContext("2d");        // ship scratch (world x 180..312)
+  const SHC = mkc(140, 96), SHG = SHC.getContext("2d");        // ship scratch (world x 180..320)
   const PLC = mkc(60, 66), PLG = PLC.getContext("2d");         // palm scratch (trunk base at 30,56)
 
+  // One drooping palm frond: a tapered, notched leaf along a curve, light above and dark below.
+  function frond(g, cx, cy, deg, len, droop, pal) {
+    const a = deg * Math.PI / 180, dx = Math.cos(a), dy = -Math.sin(a), n = len + 4;
+    for (let i = 0; i <= n; i++) {
+      const s = i / n;
+      const px = cx + dx * len * s, py = cy + dy * len * s + droop * len * s * s;
+      const tx = dx * len, ty = dy * len + 2 * droop * len * s, tl = Math.hypot(tx, ty);
+      const nx = -ty / tl, ny = tx / tl;
+      const w = (Math.sin(Math.PI * Math.min(1, s * 1.02)) * 2.8 + 0.5) * (i % 3 === 1 ? 0.55 : 1);
+      for (let k = -w; k <= w + 0.01; k += 0.5) {
+        const upper = k * -ny;                     // > 0 means the upper side of the leaf
+        const col = Math.abs(k) < 0.45 ? pal.spine : upper > 0.5 ? pal.hi : upper < -0.5 ? pal.lo : pal.mid;
+        R(g, px + nx * k, py + ny * k, 1, 1, col);
+      }
+    }
+  }
   function palm(g, x, y, T, ph, h, lean) {
+    // trunk: gentle curve, tapering, with ring marks and a flared base
     let tx = x, ty = y;
     for (let i = 0; i < h; i++) {
-      tx = x + Math.round(Math.sin(i / h * 1.3) * 5 * lean); ty = y - i;
-      R(g, tx, ty, 3, 1, i % 3 ? "#8a5a2b" : "#6b3b1a");
+      tx = x + Math.round(lean * 6 * Math.pow(i / h, 1.6)); ty = y - i;
+      const wid = i < 3 ? 6 : i < h * 0.5 ? 4 : 3, l = tx - Math.floor(wid / 2);
+      const ring = i % 3 === 0;
+      R(g, l, ty, wid, 1, ring ? "#6b3b1a" : "#9a6a38");
+      R(g, l, ty, 1, 1, ring ? "#8a5a2b" : "#c08a50");
+      R(g, l + wid - 1, ty, 1, 1, "#5a3a1a");
     }
-    const sw = REDUCED ? 0 : Math.sin(T * 1.1 + ph) * 1.5;
-    [[-15, 5], [-10, -2], [-5, -7], [0, -9], [5, -7], [10, -2], [15, 5]].forEach(([dx, dy]) => {
-      const ex = tx + dx + (dx > 0 ? sw : -sw) * Math.abs(dx) / 10, ey = ty + dy + 3;
-      const mx = tx + dx * 0.55, my = ty + dy * 0.5 - 3;
-      L(g, tx + 1, ty, mx, my, "#5cc03a"); L(g, mx, my, ex, ey, "#3a8f28"); L(g, mx, my - 1, ex, ey - 1, "#8fe05a");
-    });
-    R(g, tx - 1, ty + 1, 2, 2, "#5a2f14"); R(g, tx + 2, ty + 1, 2, 2, "#5a2f14");
+    // crown knot and coconuts
+    R(g, tx - 2, ty - 1, 5, 4, "#6b3b1a");
+    R(g, tx - 4, ty + 2, 3, 3, "#4e2a12"); R(g, tx - 4, ty + 2, 1, 1, "#8a5a2b");
+    R(g, tx + 2, ty + 3, 3, 3, "#4e2a12"); R(g, tx + 2, ty + 3, 1, 1, "#8a5a2b");
+    R(g, tx - 1, ty + 4, 3, 3, "#5a3a1a"); R(g, tx - 1, ty + 4, 1, 1, "#9a6a38");
+    // fronds: back ones darker, then the front ones, swaying a little in the wind
+    const sw = REDUCED ? 0 : Math.sin(T * 1.1 + ph) * 5;
+    const back = { hi: "#4f9a35", mid: "#3a8a2a", lo: "#2a6e22", spine: "#1f5a1a" };
+    const front = { hi: "#8fe05a", mid: "#58b83a", lo: "#357f27", spine: "#2a6a1f" };
+    [[100, 12, 0.5], [75, 12, 0.6], [125, 13, 0.7]].forEach(([d, l, dr]) => frond(g, tx, ty, d + sw * 0.5, l, dr, back));
+    [[172, 19, 0.9], [8, 19, 0.9], [150, 18, 0.8], [30, 18, 0.8], [118, 15, 0.7], [62, 15, 0.7], [200, 14, 1.1], [-20, 14, 1.1]]
+      .forEach(([d, l, dr], i) => frond(g, tx, ty + 1, d + sw * (i % 2 ? 1 : -1) * (d > 90 && d < 180 ? 0.6 : 0.6), l, dr, front));
   }
   function drawPalm(c, x, y, T, ph, h, lean) {
     R(c, x - 4, y - 1, 12, 3, "rgba(0,40,0,.25)");
@@ -428,54 +491,154 @@
     c.drawImage(PLC, Math.round(x) - 30, Math.round(y) - 56);
   }
 
+  function tri(g, x0, y0, x1, y1, x2, y2, col) {
+    const E = [[x0, y0, x1, y1], [x1, y1, x2, y2], [x2, y2, x0, y0]];
+    for (let y = Math.min(y0, y1, y2); y <= Math.max(y0, y1, y2); y++) {
+      const xs = [];
+      E.forEach(([ax, ay, bx, by]) => { if ((ay <= y && by > y) || (by <= y && ay > y)) xs.push(ax + (y - ay) * (bx - ax) / (by - ay)); });
+      if (xs.length >= 2) { const l = Math.min(...xs), r = Math.max(...xs); R(g, l, y, Math.round(r - l) + 1, 1, col); }
+    }
+  }
+
+  // Jolly Roger: black cloth, skull and crossed bones
+  const JOLLY = spr(20, 13, g => {
+    R(g, 0, 0, 20, 13, "#15152a"); R(g, 0, 0, 20, 1, "#2c2c4a"); R(g, 0, 12, 20, 1, "#0a0a18");
+    const bone = "#e8e4d2";
+    L(g, 5, 2, 14, 11, bone); L(g, 6, 2, 15, 11, bone); L(g, 14, 2, 5, 11, bone); L(g, 15, 2, 6, 11, bone);
+    [[3, 0], [16, 0], [3, 10], [16, 10]].forEach(([x, y]) => R(g, x, y, 3, 3, bone));
+    R(g, 5, 2, 9, 7, "#15152a");
+    ["..XXXXX..", ".XXXXXXX.", "XX..X..XX", "XX..X..XX", ".XXXXXXX.", "..XXXXX..", "..X.X.X.."].forEach((row, j) => {
+      for (let i = 0; i < 9; i++) if (row[i] === "X") R(g, 5 + i, 2 + j, 1, 1, "#f4f1e4");
+    });
+  }, EDGE);
+  function drawFlag(c, x, y, T, amp) {
+    const w = JOLLY.width, h = JOLLY.height;
+    for (let i = 0; i < w; i++) {
+      const o = REDUCED ? 0 : Math.round(Math.sin(T * 5 - i * 0.55) * amp * Math.min(1, i / 6));
+      c.drawImage(JOLLY, i, 0, 1, h, x + i, y + o, 1, h);
+    }
+  }
+
+  // Pirate galleon in the chunky cartoon style: gold-striped hull, round portholes, black skull sail.
+  // The hull, castles, masts and rigging never change, so they are drawn once.
+  const topY = x => x < 212 ? 52 : x < 218 ? 55 : x < 272 ? 57 : 54;
+  const botY = x => {
+    let y = 78;
+    if (x < 210) y = 78 - Math.round(Math.pow((210 - x) / 26, 1.5) * 10);
+    if (x > 264) y = 78 - Math.round(Math.pow((x - 264) / 34, 1.5) * 18);
+    return y;
+  };
+  const disc2 = (g, cx, cy, r, col) => { for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r + 0.5) R(g, cx + x, cy + y, 1, 1, col); };
+  const SHIP_STATIC = mkc(140, 96);
+  (function () {
+    const g = SHIP_STATIC.getContext("2d");
+    g.translate(-180, 0);
+    const ROPE = "#e4e4dc";
+    // rope lines from the bowsprit and back to the stern (behind the sails)
+    [[316, 44, 272, 22], [272, 10, 240, 10], [240, 10, 192, 34]].forEach(([a, b2, c2, d]) => L(g, a, b2, c2, d, ROPE));
+    // masts
+    R(g, 236, 6, 3, 52, "#5a3414"); R(g, 236, 6, 1, 52, "#8a5a2b");
+    R(g, 270, 10, 3, 48, "#5a3414"); R(g, 270, 10, 1, 48, "#8a5a2b");
+    R(g, 205, 12, 3, 24, "#5a3414"); R(g, 205, 12, 1, 24, "#8a5a2b");
+    disc2(g, 207, 11, 2, "#d98a1c"); disc2(g, 271, 9, 2, "#d98a1c"); disc2(g, 237, 5, 2, "#d98a1c");
+    // stern cabin with window and flat roof (the lookout stands on top)
+    R(g, 188, 36, 24, 14, "#8a5a2b");
+    for (let y = 39; y < 49; y += 3) R(g, 188, y, 24, 1, "#6a3d1a");
+    R(g, 186, 32, 28, 5, "#5a3414"); R(g, 186, 32, 28, 1, "#c99a58");
+    R(g, 196, 40, 8, 7, "#9fd3ff"); R(g, 199, 40, 2, 7, "#8a5a2b"); R(g, 196, 43, 8, 1, "#8a5a2b");
+    for (let x = 187; x < 213; x += 5) R(g, x, 29, 1, 3, "#e4e4dc");
+    R(g, 187, 29, 26, 1, "#e4e4dc");
+    // deck seen from above, with white railing along the far side
+    for (let y = 49; y < 57; y++) R(g, 214, y, 282 - Math.floor((57 - y) * 1.5) - 214, 1, (y & 1) ? "#d9b46a" : "#c29a4a");
+    R(g, 216, 46, 62, 1, "#e4e4dc"); for (let x = 218; x < 278; x += 6) R(g, x, 46, 1, 4, "#e4e4dc");
+    // forecastle
+    R(g, 272, 46, 22, 9, "#8a5a2b"); R(g, 272, 46, 22, 2, "#c99a58"); for (let x = 275; x < 292; x += 5) R(g, x, 50, 1, 5, "#6a3d1a");
+    // hull column by column so the sheer and the keel follow their curves
+    for (let x = 184; x < 298; x++) {
+      const t = topY(x), b = botY(x), h = b - t;
+      for (let y = t; y <= b; y++) {
+        const rel = y - t;
+        let col;
+        if (rel < 2) col = "#f2f2ea";
+        else if (rel === 2) col = "#ffd25a";
+        else if (rel === 3) col = "#f5b335";
+        else if (rel === 4) col = "#d98a1c";
+        else if (rel === 5) col = "#4a2a12";
+        else if (rel >= h - 1) col = "#2d1708";
+        else if ((rel - 6) % 4 === 3) col = "#5a3010";
+        else if ((x + (((rel - 6) >> 2) % 2) * 7) % 14 === 0) col = "#5a3010";
+        else col = rel < 9 ? "#9a6530" : "#8a5a2b";
+        R(g, x, y, 1, 1, col);
+      }
+    }
+    // round portholes with grey rims, anchor emblem on the bow
+    [208, 224, 252, 268].forEach(cx => {
+      const cy = topY(cx) + 11;
+      disc2(g, cx, cy, 4, "#2a2a32"); disc2(g, cx, cy, 3, "#a9b4c0"); disc2(g, cx, cy, 2, "#2a5a86"); R(g, cx - 1, cy - 1, 1, 1, "#8fd0ff");
+    });
+    const Y = "#f5b335";
+    R(g, 284, 58, 1, 9, Y); R(g, 282, 60, 5, 1, Y); disc2(g, 284, 58, 1, Y);
+    R(g, 281, 65, 1, 2, Y); R(g, 287, 65, 1, 2, Y); R(g, 282, 67, 2, 1, Y); R(g, 285, 67, 2, 1, Y); R(g, 283, 68, 4, 1, Y);
+    // stern windows, figurehead and rudder
+    R(g, 187, 55, 3, 3, "#9fd3ff"); R(g, 187, 60, 3, 3, "#9fd3ff");
+    R(g, 296, 50, 3, 6, "#f5b335"); R(g, 298, 48, 2, 3, "#f5b335");
+    R(g, 183, 56, 2, 14, "#3d1f0c");
+    // bowsprit
+    L(g, 292, 50, 316, 42, "#5a3414"); L(g, 292, 51, 316, 43, "#5a3414");
+    // rope ladder down to the pier and the mooring line
+    R(g, 233, 58, 1, 20, "#e4d9a0"); R(g, 239, 58, 1, 20, "#e4d9a0");
+    for (let y = 60; y < 78; y += 3) R(g, 233, y, 7, 1, "#e4d9a0");
+    L(g, 224, 70, 232, 78, "#e4d9a0");
+  })();
+
+  const SAIL_DARK = { hi: "#6b83a0", mid: "#2c3b52", lo: "#1c2638" };
+  const SAIL_BLUE = { hi: "#9bb4cf", mid: "#5f7898", lo: "#40556f" };
+  const SAIL_RED = { hi: "#e0605a", mid: "#a8322d", lo: "#7a2320" };
+  const SAIL_TAN = { hi: "#f5dc9a", mid: "#dcb86c", lo: "#a8863f" };
   function shipArt(g, T) {
-    const D = 58, sw = (a, s) => REDUCED ? 0 : Math.sin(a) * s;
-    for (let y = D - 9; y < D; y++) R(g, 190, y, 288 - Math.floor((D - y) * 2.5) - 190, 1, (y + D) % 3 ? "#d2ad68" : "#b8923f");
-    R(g, 190, D - 11, 90, 2, "#8a5a2b"); for (let x = 192; x < 280; x += 8) R(g, x, D - 14, 2, 4, "#6e3b1a");
-    R(g, 192, D - 30, 22, 20, "#8a5a2b"); R(g, 190, D - 34, 26, 5, "#5a2f14"); R(g, 190, D - 34, 26, 1, "#8a5a2b");
-    for (let y = D - 27; y < D - 11; y += 3) R(g, 192, y, 22, 1, "#6e3b1a");
-    R(g, 197, D - 25, 8, 6, "#ffe27a"); R(g, 200, D - 25, 2, 6, "#8a5a2b"); R(g, 197, D - 23, 8, 1, "#8a5a2b");
-    R(g, 235, 10, 3, D - 14, "#4a2a12"); R(g, 235, 10, 1, D - 14, "#6e3b1a");
-    R(g, 269, 22, 3, D - 26, "#4a2a12"); R(g, 269, 22, 1, D - 26, "#6e3b1a");
-    for (let r = 0; r < 26; r++) {
-      const o = Math.round(sw(T * 1.6 + r * 0.17, 1.2));
-      R(g, 214 + o, 26 + r, 44, 1, r % 13 === 12 ? "#d9d0b0" : "#f6f2e2");
-      R(g, 246 + o, 26 + r, 12, 1, r % 13 === 12 ? "#cfc59f" : "#e4dcc0");
-    }
-    R(g, 211, 24, 50, 2, "#4a2a12");
-    R(g, 232, 33, 8, 6, "#1a1a2e"); R(g, 233, 39, 6, 2, "#1a1a2e");
-    R(g, 233, 35, 2, 2, "#fff"); R(g, 237, 35, 2, 2, "#fff"); R(g, 236, 37, 1, 1, "#fff"); R(g, 234, 41, 1, 1, "#fff"); R(g, 237, 41, 1, 1, "#fff");
-    L(g, 228, 44, 246, 48, "#1a1a2e"); L(g, 246, 44, 228, 48, "#1a1a2e");
-    for (let r = 0; r < 22; r++) {
-      const o = Math.round(sw(T * 1.6 + r * 0.17 + 1, 1)), red = r >= 8 && r <= 12;
-      R(g, 258 + o, 30 + r, 26, 1, red ? "#c8372d" : "#f6f2e2"); R(g, 275 + o, 30 + r, 9, 1, red ? "#a82a22" : "#e4dcc0");
-    }
-    R(g, 255, 28, 32, 2, "#4a2a12");
-    R(g, 234, 6, 5, 4, GOLD);
-    for (let col = 0; col < 12; col++) {
-      const o = Math.round(sw(T * 4 + col * 0.7, 1.3));
-      R(g, 238 + col, 1 + o, 1, 7, "#15152a");
-      if (col >= 3 && col <= 6) R(g, 238 + col, 3 + o, 1, 2, "#fff");
-    }
-    for (let r = 0; r < 20; r++) {
-      const l = 184 + Math.floor(r * 0.3), rr = 292 - Math.floor(r * 1.25);
-      const col = r < 2 ? "#c99a58" : r < 4 ? "#6e3b1a" : r === 9 ? GOLD : r === 13 || r === 14 ? "#a82a22" : r > 17 ? "#3d1f0c" : (r % 4 === 0 ? "#6a3818" : "#7a4420");
-      R(g, l, D + r, rr - l, 1, col);
-    }
-    [206, 224, 252, 270].forEach(px => { R(g, px, D + 5, 5, 3, "#140a05"); R(g, px, D + 5, 5, 1, "#3a2210"); });
-    R(g, 233, D, 1, 20, "#c9a45a"); R(g, 239, D, 1, 20, "#c9a45a");
-    for (let y = D + 1; y < D + 20; y += 3) R(g, 233, y, 7, 1, "#c9a45a");
-    L(g, 286, D + 1, 306, D - 6, "#4a2a12"); L(g, 286, D + 2, 306, D - 5, "#4a2a12");
+    const sw = (a, s) => REDUCED ? 0 : Math.sin(a) * s;
+    g.drawImage(SHIP_STATIC, 180, 0);
+    // a billowing square sail with a lit left edge, a shaded right edge and a lit top border
+    const sail = (x0, y0, w, h, pal, ph, bulge) => {
+      for (let r = 0; r < h; r++) {
+        const b = Math.round(Math.sin(Math.PI * r / h) * bulge), o = Math.round(sw(T * 1.5 + r * 0.17 + ph, 0.8));
+        const cut = Math.max(0, r - (h - 4));   // bottom corners curve in
+        const xl = x0 - b + o + cut, xr = x0 + w + b + o - cut, wd = xr - xl;
+        R(g, xl, y0 + r, wd, 1, r < 2 ? pal.hi : r > h - 3 ? pal.lo : pal.mid);
+        R(g, xl, y0 + r, 2, 1, pal.hi); R(g, xr - 3, y0 + r, 3, 1, pal.lo);
+        if (r % 9 === 8) R(g, xl, y0 + r, wd, 1, pal.lo);
+      }
+      R(g, x0 - 3, y0 - 2, w + 6, 2, "#3d2410");
+    };
+    sail(215, 17, 44, 34, SAIL_DARK, 0, 2);
+    sail(262, 12, 20, 11, SAIL_RED, 1, 1);
+    sail(259, 27, 26, 23, SAIL_BLUE, 1.6, 2);
+    sail(198, 15, 14, 17, SAIL_TAN, 3, 1);
+    // skull and crossed bones on the main sail
+    const cx = 237, cy = 33;
+    L(g, cx - 11, cy - 8, cx + 11, cy + 14, "#e8e4d2"); L(g, cx - 10, cy - 8, cx + 12, cy + 14, "#e8e4d2");
+    L(g, cx + 11, cy - 8, cx - 11, cy + 14, "#e8e4d2"); L(g, cx + 12, cy - 8, cx - 10, cy + 14, "#e8e4d2");
+    [[-13, -10], [11, -10], [-13, 13], [11, 13]].forEach(([dx, dy]) => R(g, cx + dx, cy + dy, 3, 3, "#e8e4d2"));
+    R(g, cx - 7, cy - 7, 14, 12, SAIL_DARK.mid);
+    ["..XXXXXXX..", ".XXXXXXXXX.", "XXXX...XXXX", "XXX.XXX.XXX", ".XXXXXXXXX.", "..XXXXXXX..", "...X.X.X..."].forEach((row, j) => {
+      for (let i = 0; i < 11; i++) if (row[i] === "X") R(g, cx - 5 + i, cy - 6 + j, 1, 1, "#f4f1e4");
+    });
+    R(g, cx - 4, cy - 4, 3, 3, SAIL_DARK.lo); R(g, cx + 1, cy - 4, 3, 3, SAIL_DARK.lo);
+    // red pennants on the mast tops
+    for (let i = 0; i < 12; i++) { const o = Math.round(sw(T * 5 - i * 0.7, 1)); R(g, 273 + i, 5 + o + (i >> 2), 1, Math.max(1, 4 - (i >> 2)), "#d8312a"); }
+    for (let i = 0; i < 14; i++) { const o = Math.round(sw(T * 5 - i * 0.7 + 1, 1)); R(g, 239 + i, 1 + o + (i >> 2), 1, Math.max(1, 4 - (i >> 2)), "#d8312a"); }
+    for (let i = 0; i < 8; i++) { const o = Math.round(sw(T * 5 - i * 0.7 + 2, 1)); R(g, 209 + i, 8 + o + (i >> 2), 1, Math.max(1, 3 - (i >> 2)), "#d8312a"); }
   }
   function drawShip(c, T) {
-    [[100, 78], [88, 79], [72, 80], [50, 81]].forEach(([w, y]) => R(c, 238 - w / 2, y, w, 1, "rgba(0,30,70,.22)"));
-    SHG.setTransform(1, 0, 0, 1, 0, 0); SHG.clearRect(0, 0, 132, 96);
+    [[104, 78], [92, 79], [76, 80], [52, 81]].forEach(([w, y]) => R(c, 241 - w / 2, y, w, 1, "rgba(0,30,70,.22)"));
+    SHG.setTransform(1, 0, 0, 1, 0, 0); SHG.clearRect(0, 0, 140, 96);
     SHG.translate(-180, 0); shipArt(SHG, T); SHG.setTransform(1, 0, 0, 1, 0, 0);
-    edge(SHG, 132, 96, EDGE);
+    edge(SHG, 140, 96, EDGE);
     c.drawImage(SHC, 180, 0);
     for (let i = 0; i < 12; i++) {
-      const x = 184 + ((i * 10 + (REDUCED ? 0 : T * 8)) % 104);
-      R(c, x, 77, 5, 1, "#e6f4ff"); R(c, x + 2, 78, 4, 1, "#9bd4f6");
+      const x = 184 + ((i * 10 + (REDUCED ? 0 : Math.floor(T * 8))) % 108);
+      const y = botY(x);
+      R(c, x, y, 5, 1, "#e6f4ff"); R(c, x + 2, y + 1, 4, 1, "#9bd4f6");
     }
   }
 
@@ -487,7 +650,7 @@
     let hl = [0, 4 + sw], hr = [0, 4 - sw], pre = null, post = null, main = null;
     switch (p.act) {
       case "steer": {
-        const a = Math.sin(ph * 0.5) * 0.9;
+        const a = Math.round(Math.sin(ph * 0.5) * 0.9 / (Math.PI / 8)) * (Math.PI / 8);
         pre = () => {
           for (let i = 0; i < 8; i++) { const g = a + i * Math.PI / 4; L(SG, x, y - 17, x + Math.cos(g) * 7, y - 17 + Math.sin(g) * 7, "#c9a45a"); }
           for (let i = 0; i < 20; i++) { const g = i * Math.PI / 10; R(SG, x + Math.round(Math.cos(g) * 6), y - 17 + Math.round(Math.sin(g) * 6), 1, 1, "#8a5a2b"); }
@@ -502,7 +665,7 @@
       case "stir": {
         const a = ph * 4;
         hr = [8 + Math.round(Math.cos(a) * 1.5), -5 + Math.round(Math.sin(a) * 1.5)];
-        post = h => { L(SG, h.r[0], h.r[1], h.r[0] + 6, h.r[1] - 1, "#c9c9d0"); R(SG, h.r[0] + 6, h.r[1] - 2, 2, 3, "#8a8a96"); }; break;
+        post = h => { R(SG, h.r[0], h.r[1], 7, 1, "#c9c9d0"); R(SG, h.r[0] + 6, h.r[1] - 1, 2, 3, "#8a8a96"); }; break;
       }
       case "taste": hr = [2, -6]; hl = [-1, 3]; post = h => { R(SG, h.r[0] - 1, h.r[1] - 1, 4, 3, "#e0c27a"); R(SG, h.r[0] - 1, h.r[1] - 2, 4, 1, "#fff"); }; break;
       case "hammer": {
@@ -526,12 +689,12 @@
         const up = (ph * 1.4) % 1 < 0.5;
         hr = up ? [4, -9] : [9, -4]; hl = [-1, 3];
         post = h => {
-          if (up) { L(SG, h.r[0], h.r[1] - 1, h.r[0] + 1, h.r[1] - 10, "#e4e4f0"); R(SG, h.r[0] - 1, h.r[1], 3, 1, GOLD); }
-          else { L(SG, h.r[0] + 1, h.r[1], h.r[0] + 10, h.r[1] + 1, "#e4e4f0"); R(SG, h.r[0], h.r[1] - 1, 1, 3, GOLD); }
+          if (up) { R(SG, h.r[0], h.r[1] - 10, 1, 10, "#e4e4f0"); R(SG, h.r[0] - 1, h.r[1], 3, 1, GOLD); }
+          else { R(SG, h.r[0] + 1, h.r[1], 10, 1, "#e4e4f0"); R(SG, h.r[0], h.r[1] - 1, 1, 3, GOLD); }
         }; break;
       }
       case "map": hr = [6, 2]; hl = [5, 3]; break;
-      case "scope": hr = [3, -8]; hl = [-2, 0]; post = h => { L(SG, h.r[0], h.r[1], h.r[0] + 6, h.r[1] - 5, "#c9a45a"); R(SG, h.r[0] + 6, h.r[1] - 6, 2, 3, GOLD); }; break;
+      case "scope": hr = [3, -8]; hl = [-2, 0]; post = h => { L(SG, h.r[0], h.r[1], h.r[0] + 6, h.r[1] - 6, "#c9a45a"); R(SG, h.r[0] + 6, h.r[1] - 8, 2, 3, GOLD); }; break;
       case "write": {
         const j = Math.floor(ph * 3) % 2;
         hl = [4, 0]; hr = [3, -1 + j];
@@ -540,12 +703,12 @@
       case "fish": {
         const dip = (ph % 6) > 5.1;
         hr = [5, dip ? -8 : -6]; hl = [3, -1];
-        post = h => L(SG, h.r[0], h.r[1], h.r[0] + 10, h.r[1] - 16, "#b27a3e");
+        post = h => L(SG, h.r[0], h.r[1], h.r[0] + 8, h.r[1] - 16, "#b27a3e");
         main = () => {
-          const tx = wx + 8 + 5 + 10 - 3 + 0, ty = wy - 10 + 1 + (dip ? -8 : -6) - 16;
-          const bx = tx + 3, by = 84 + Math.round(Math.sin(ph * 2)) + (dip ? 2 : 0);
-          L(c, tx, ty, bx, by, "#f4f4ee"); R(c, bx - 1, by, 3, 2, "#c8372d"); R(c, bx - 1, by, 3, 1, "#fff");
-          const r = Math.floor(ph * 2) % 3; R(c, bx - 3 - r, by + 3, 6 + r * 2, 1, "rgba(255,255,255,.55)");
+          const tx = wx + 8 + 8, ty = wy - 16 - 16 + (dip ? -2 : 0);
+          const by = 84 + Math.round(Math.sin(ph * 2)) + (dip ? 2 : 0);
+          R(c, tx, ty, 1, by - ty, "#f4f4ee"); R(c, tx - 1, by, 3, 2, "#c8372d"); R(c, tx - 1, by, 3, 1, "#fff");
+          const r = Math.floor(ph * 2) % 3; R(c, tx - 3 - r, by + 3, 6 + r * 2, 1, "rgba(255,255,255,.55)");
         }; break;
       }
     }
@@ -610,7 +773,7 @@
     // pad scenery
     PADPROPS.forEach(p => {
       if (p.x < vx0 - 30 || p.x > vx1 + 30 || p.y < vy0 - 10 || p.y > vy1 + 40) return;
-      add(p.y, () => p.k === "tree" ? blit(c, TREE, p.x - 17, p.y - 36) : p.k === "bush" ? blit(c, BUSH, p.x - 10, p.y - 13) : blit(c, STONE, p.x - 4, p.y - 5));
+      add(p.y, () => p.k === "tree" ? tree(c, p.v, p.x, p.y) : p.k === "bush" ? blit(c, BUSH, p.x - 10, p.y - 13) : blit(c, STONE, p.x - 4, p.y - 5));
     });
     // core scenery
     add(148, () => {
@@ -621,14 +784,14 @@
       }
     });
     add(172, () => blit(c, TENT, 172, 172 - 26));
-    [[10, 180], [304, 168], [296, 134], [200, 188]].forEach(([x, y]) => add(y, () => blit(c, TREE, x - 17, y - 36)));
-    [[-4, 168], [330, 186], [330, 140], [-16, 130]].forEach(([x, y]) => add(y, () => blit(c, TREE, x - 17, y - 36)));
+    [[10, 180], [304, 168], [320, 150], [236, 190]].forEach(([x, y], i) => add(y, () => tree(c, i, x, y)));
+    [[-4, 168], [330, 190], [348, 134], [-16, 130]].forEach(([x, y], i) => add(y, () => tree(c, i + 1, x, y)));
     [[60, 174], [232, 150], [124, 190], [300, 150], [4, 150], [256, 190]].forEach(([x, y]) => add(y, () => blit(c, BUSH, x - 10, y - 13)));
     add(122, () => drawPalm(c, 12, 122, TA, 0, 30, 1));
     add(116, () => drawPalm(c, 118, 116, TA, 2, 26, -1));
     add(112, () => drawPalm(c, 300, 112, TA, 4, 28, 1));
-    add(122, () => { blit(c, BARREL, 200, 110); blit(c, CRATE, 210, 114); blit(c, CRATE, 219, 114); blit(c, CRATE, 214, 105); });
-    add(154, () => blit(c, BARREL, 160, 142));
+    add(120, () => { blit(c, BARREL, 172, 107); blit(c, CRATE, 181, 111); blit(c, CRATE, 190, 111); blit(c, CRATE, 185, 102); });
+    add(166, () => blit(c, BARREL, 160, 154));
     add(176, () => { blit(c, CHEST, 284, 176 - 14); if (!REDUCED && TA % 3 < 0.5) { R(c, 290, 156, 1, 5, "#fff"); R(c, 288, 158, 5, 1, "#fff"); } });
     add(146, () => blit(c, TABLE, 248, 146 - 17));
     add(172, () => blit(c, BENCH, 30, 172 - 17));
@@ -642,12 +805,8 @@
     // flagpole
     add(120, () => {
       R(c, 164, 119, 6, 2, "rgba(0,40,0,.25)");
-      R(c, 166, 66, 2, 55, "#6e3b1a"); R(c, 165, 64, 4, 3, GOLD);
-      for (let col = 0; col < 14; col++) {
-        const o = REDUCED ? 0 : Math.round(Math.sin(TA * 3.5 + col * 0.6) * 1.4);
-        R(c, 168 + col, 68 + o, 1, 9, "#15152a");
-        if (col >= 4 && col <= 8) R(c, 168 + col, 70 + o, 1, 3, "#fff");
-      }
+      R(c, 166, 62, 2, 59, "#6e3b1a"); R(c, 165, 60, 4, 3, GOLD);
+      drawFlag(c, 169, 63, TA, 1.4);
     });
     // campfire
     add(164, () => {
@@ -689,14 +848,13 @@
     });
     // crew
     ["mate", "qm", "nav", "cook", "carp", "gunner", "kid", "captain"].forEach(id => add(Math.round(at(ROUTES[id], Tm).y), () => drawCrew(c, id, Tm, TA)));
-    add(20, () => {
+    add(33, () => {
       const d = REDUCED || Math.sin(TA * 0.6) >= 0 ? "r" : "l", s = d === "r" ? 1 : -1;
       SG.clearRect(0, 0, 64, 64);
       const h = person(SG, 32, 48, { ...LOOK.lookout, dir: d, hl: [s * 3, -5], hr: [s * 5, -6] });
       L(SG, h.r[0], h.r[1], h.r[0] + s * 6, h.r[1] - 3, "#c9a45a"); R(SG, h.r[0] + s * 6, h.r[1] - 4, 1, 3, GOLD);
-      R(SG, 32 - 9, 48 - 5, 19, 2, "#c99a58"); R(SG, 32 - 8, 48 - 3, 17, 6, "#8a5a2b"); R(SG, 32 - 8, 48, 17, 1, "#5a2f14"); R(SG, 32 - 8, 48 + 2, 17, 1, "#3d1f0c");
       edge(SG, 64, 64, EDGE);
-      c.drawImage(SC, 236 - 32, 20 - 48);
+      c.drawImage(SC, 195 - 32, 33 - 48);
     });
     // parrot + gull shadows, then flyers on top
     add(1000, () => {
