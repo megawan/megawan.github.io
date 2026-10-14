@@ -150,7 +150,7 @@
   /* ================= routes ================= */
   // Walks are axis-aligned like tile movement: every leg is purely horizontal or vertical.
   function mkRoute(nodes, speed) {
-    speed = speed || 16;
+    speed = speed || 20;   // 20 px/s = exactly 1 px every 3 ticks at 60 Hz
     const segs = []; let t = 0;
     nodes.forEach((a, i) => {
       const b = nodes[(i + 1) % nodes.length];
@@ -166,11 +166,14 @@
     let s = rt.segs[rt.segs.length - 1];
     for (const g of rt.segs) if (tt >= g.t0 && tt < g.t1) { s = g; break; }
     if (s.stay) return { x: s.a.x, y: s.a.y, dir: s.a.face || "d", moving: false, act: s.a.act, au: tt - s.t0, carry: !!s.a.carry, step: 0 };
-    const u = (tt - s.t0) / (s.t1 - s.t0), dx = s.b.x - s.a.x, dy = s.b.y - s.a.y;
+    // whole pixels only, so every step lands exactly on the pixel grid
+    const dx = s.b.x - s.a.x, dy = s.b.y - s.a.y;
+    const dist = Math.floor((tt - s.t0) * rt.speed + 1e-6);
     return {
-      x: s.a.x + dx * u, y: s.a.y + dy * u, moving: true, carry: !!s.a.carry, au: 0,
+      x: s.a.x + Math.sign(dx) * Math.min(Math.abs(dx), dist), y: s.a.y + Math.sign(dy) * Math.min(Math.abs(dy), dist),
+      moving: true, carry: !!s.a.carry, au: 0,
       dir: dx !== 0 ? (dx > 0 ? "r" : "l") : (dy > 0 ? "d" : "u"),
-      step: Math.floor((tt - s.t0) * rt.speed / 2.5) % 4
+      step: Math.floor(dist / 3) % 4
     };
   }
   const N = (x, y, act, dur, face, carry) => ({ x, y, act, dur: dur || 0, face, carry });
@@ -367,14 +370,14 @@
     for (let x = 252; x <= 316; x += 8) { R(c, x, 180, 3, 10, "#a9753a"); R(c, x, 180, 3, 1, "#d2a35e"); R(c, x, 189, 3, 1, "#6e3b1a"); }
     R(c, 252, 183, 67, 2, "#8a5a2b"); R(c, 252, 187, 67, 2, "#8a5a2b"); R(c, 252, 183, 67, 1, "#c99a58");
     // pier
-    R(c, 224, 76, 18, 28, "rgba(8,40,80,.28)");
+    R(c, 224, 78, 18, 26, "rgba(8,40,80,.28)");
     for (let k = 0; k < 3; k++) { R(c, 225, 80 + k * 10, 3, 7, "#4a2a12"); R(c, 239, 80 + k * 10, 3, 7, "#4a2a12"); R(c, 225, 80 + k * 10, 3, 2, "#8a5a2b"); R(c, 239, 80 + k * 10, 3, 2, "#8a5a2b"); }
-    for (let y = 70; y < 104; y += 4) {
+    for (let y = 78; y < 104; y += 4) {
       R(c, 226, y, 14, 3, "#b27a3e"); R(c, 226, y, 14, 1, "#d6a864"); R(c, 226, y + 3, 14, 1, "#6e3b1a");
       R(c, 229 + (y % 8), y, 1, 3, "#8a5a2b");
     }
-    R(c, 224, 70, 2, 34, "#6e3b1a"); R(c, 240, 70, 2, 34, "#6e3b1a");
-    R(c, 223, 69, 4, 3, "#3d1f0c"); R(c, 239, 69, 4, 3, "#3d1f0c");
+    R(c, 224, 78, 2, 26, "#6e3b1a"); R(c, 240, 78, 2, 26, "#6e3b1a");
+    R(c, 223, 77, 4, 3, "#3d1f0c"); R(c, 239, 77, 4, 3, "#3d1f0c");
   })();
 
   /* ================= canvas + camera ================= */
@@ -382,17 +385,21 @@
   const ctx = cv.getContext("2d");
   let LW = W, LH = H, camX = 0, camY = 0, camReady = false;
 
+  let SCALE = 4;   // device pixels per world unit, always a whole number
   function fit() {
-    const vw = innerWidth, vh = innerHeight, portrait = vw < vh;
-    let s = portrait ? Math.max(2, Math.round(vw / 230)) : Math.max(2, Math.floor(Math.min(vw / W, vh / H) + 0.35));
+    const dpr = window.devicePixelRatio || 1;
+    const vw = innerWidth * dpr, vh = innerHeight * dpr, portrait = vw < vh;
+    let s = portrait ? Math.max(1, Math.round(vw / 230)) : Math.max(1, Math.floor(Math.min(vw / W, vh / H)));
     s = Math.max(s, Math.ceil(vw / WW), Math.ceil(vh / WH));
+    SCALE = s;
     LW = Math.ceil(vw / s); LH = Math.ceil(vh / s);
     cv.width = LW; cv.height = LH;
-    cv.style.width = LW * s + "px"; cv.style.height = LH * s + "px";
+    cv.style.width = (LW * s / dpr) + "px"; cv.style.height = (LH * s / dpr) + "px";
     camReady = false;
     if (REDUCED) draw(T0);
   }
   addEventListener("resize", fit);
+  matchMedia("(resolution: 1dppx)").addEventListener?.("change", fit);
 
   /* ================= dynamic bits ================= */
   const SC = mkc(64, 64), SG = SC.getContext("2d");           // crew scratch (feet at 32,48)
@@ -461,7 +468,7 @@
     L(g, 286, D + 1, 306, D - 6, "#4a2a12"); L(g, 286, D + 2, 306, D - 5, "#4a2a12");
   }
   function drawShip(c, T) {
-    R(c, 184, 72, 108, 10, "rgba(0,30,70,.22)");
+    [[100, 78], [88, 79], [72, 80], [50, 81]].forEach(([w, y]) => R(c, 238 - w / 2, y, w, 1, "rgba(0,30,70,.22)"));
     SHG.setTransform(1, 0, 0, 1, 0, 0); SHG.clearRect(0, 0, 132, 96);
     SHG.translate(-180, 0); shipArt(SHG, T); SHG.setTransform(1, 0, 0, 1, 0, 0);
     edge(SHG, 132, 96, EDGE);
@@ -473,9 +480,9 @@
   }
 
   /* ================= crew ================= */
-  function drawCrew(c, id, T) {
+  function drawCrew(c, id, T, TA) {
     const p = at(ROUTES[id], T), wx = Math.round(p.x), wy = Math.round(p.y);
-    const x = 32, y = 48, au = p.au, ph = T;
+    const x = 32, y = 48, au = p.au, ph = TA;
     const sw = p.moving ? (p.step === 1 ? 1 : p.step === 3 ? -1 : 0) : 0;
     let hl = [0, 4 + sw], hr = [0, 4 - sw], pre = null, post = null, main = null;
     switch (p.act) {
@@ -557,13 +564,16 @@
 
   /* ================= frame ================= */
   function draw(T) {
-    const c = ctx, Tm = REDUCED ? T0 : T;
+    const c = ctx, tick = Math.floor((REDUCED ? T0 : T) * 60 + 1e-6);
+    const Tm = tick / 60;                      // movement clock (whole ticks)
+    let TA = Math.floor(Tm * 8) / 8;           // ambient clock: sails, water, smoke at 8 fps
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.imageSmoothingEnabled = false;
     // camera: centred when the view is wider than the scene, otherwise it follows the captain
     const cap = at(ROUTES.captain, Tm);
     const wantX = LW >= W ? W / 2 - LW / 2 : clamp(cap.x - LW / 2, 0, W - LW);
-    if (!camReady || REDUCED) { camX = wantX; camReady = true; } else camX += (wantX - camX) * 0.05;
+    if (!camReady || REDUCED) { camX = Math.round(wantX); camReady = true; }
+    else if (Math.abs(wantX - camX) > 10 && tick % 2 === 0) camX += Math.sign(wantX - camX);   // 30 px/s
     camY = (LH > H ? 118 : 100) - LH / 2;
     const cx = Math.round(camX), cy = Math.round(camY);
     c.setTransform(1, 0, 0, 1, -cx, -cy);
@@ -575,23 +585,23 @@
     for (let k = Math.floor(vy0 / 8); k <= Math.floor(Math.min(vy1, SHORE) / 8); k++) {
       const y = k * 8 + 6, len = 6 + (((k % 3) + 3) % 3) * 3;
       for (let i = 0; i < 9; i++) {
-        const x = ((i * 67 + k * 23 + Tm * (3 + (((k % 3) + 3) % 3))) % span + span) % span - PADX;
+        const x = Math.floor(((i * 67 + k * 23 + TA * (3 + (((k % 3) + 3) % 3))) % span + span) % span) - PADX;
         if (x > vx0 - 14 && x < vx1 && y < shoreY(x) - 6) { R(c, x, y, len, 1, "rgba(255,255,255,.28)"); R(c, x + len + 3, y + 1, 3, 1, "rgba(255,255,255,.2)"); }
       }
     }
     for (let gx = Math.floor(vx0 / 20); gx <= Math.floor(vx1 / 20); gx++) for (let gy = Math.floor(vy0 / 14); gy <= Math.floor(Math.min(vy1, SHORE - 8) / 14); gy++) {
       const s = gx * 131 + gy * 977, x = gx * 20 + rnd(s) * 18, y = gy * 14 + rnd(s + 5) * 12;
-      if (rnd(s + 9) < 0.45 && ((Tm * 0.9 + rnd(s + 3) * 5) % 2) < 0.3 && y < shoreY(x) - 6) { R(c, x, y - 1, 1, 3, "#fff"); R(c, x - 1, y, 3, 1, "#fff"); }
+      if (rnd(s + 9) < 0.45 && ((TA * 0.9 + rnd(s + 3) * 5) % 2) < 0.3 && y < shoreY(x) - 6) { R(c, x, y - 1, 1, 3, "#fff"); R(c, x - 1, y, 3, 1, "#fff"); }
     }
     // buoys bobbing in the open water
     [[-70, 40], [20, 18], [150, 50], [330, 30], [-30, -60], [260, -50], [180, -110]].forEach(([x, y], i) => {
-      if (x > vx0 - 10 && x < vx1 && y > vy0 - 14 && y < vy1) blit(c, BUOY, x, y + (REDUCED ? 0 : Math.round(Math.sin(Tm * 1.6 + i))));
+      if (x > vx0 - 10 && x < vx1 && y > vy0 - 14 && y < vy1) blit(c, BUOY, x, y + (REDUCED ? 0 : Math.round(Math.sin(TA * 1.6 + i))));
     });
 
-    drawShip(c, Tm);
+    drawShip(c, TA);
     c.drawImage(front, -PADX, -PADY);
     for (let x = vx0; x < vx1; x++) {
-      const w = REDUCED ? 1 : Math.floor((Math.sin(Tm * 1.5 + x / 14) + 1) * 1.3), sy = shoreY(x);
+      const w = REDUCED ? 1 : Math.floor((Math.sin(TA * 1.5 + x / 14) + 1) * 1.3), sy = shoreY(x);
       R(c, x, sy - 1 - w, 1, 1, "#fff"); if (w > 0) R(c, x, sy - 2 - w, 1, 1, "rgba(255,255,255,.55)");
     }
 
@@ -606,20 +616,20 @@
     add(148, () => {
       blit(c, CABIN, 17, 148 - 52);
       if (!REDUCED) for (let k = 0; k < 4; k++) {
-        const q = (Tm * 0.5 + k * 0.25) % 1;
-        R(c, 63 + Math.sin(Tm + k) * 2 + q * 6, 90 - q * 26, 2 + Math.floor(q * 3), 2 + Math.floor(q * 3), "rgba(240,240,245," + (0.8 * (1 - q)).toFixed(2) + ")");
+        const q = (TA * 0.5 + k * 0.25) % 1;
+        R(c, 63 + Math.sin(TA + k) * 2 + q * 6, 90 - q * 26, 2 + Math.floor(q * 3), 2 + Math.floor(q * 3), "rgba(240,240,245," + (0.8 * (1 - q)).toFixed(2) + ")");
       }
     });
     add(172, () => blit(c, TENT, 172, 172 - 26));
     [[10, 180], [304, 168], [296, 134], [200, 188]].forEach(([x, y]) => add(y, () => blit(c, TREE, x - 17, y - 36)));
     [[-4, 168], [330, 186], [330, 140], [-16, 130]].forEach(([x, y]) => add(y, () => blit(c, TREE, x - 17, y - 36)));
     [[60, 174], [232, 150], [124, 190], [300, 150], [4, 150], [256, 190]].forEach(([x, y]) => add(y, () => blit(c, BUSH, x - 10, y - 13)));
-    add(122, () => drawPalm(c, 12, 122, Tm, 0, 30, 1));
-    add(116, () => drawPalm(c, 118, 116, Tm, 2, 26, -1));
-    add(112, () => drawPalm(c, 300, 112, Tm, 4, 28, 1));
+    add(122, () => drawPalm(c, 12, 122, TA, 0, 30, 1));
+    add(116, () => drawPalm(c, 118, 116, TA, 2, 26, -1));
+    add(112, () => drawPalm(c, 300, 112, TA, 4, 28, 1));
     add(122, () => { blit(c, BARREL, 200, 110); blit(c, CRATE, 210, 114); blit(c, CRATE, 219, 114); blit(c, CRATE, 214, 105); });
     add(154, () => blit(c, BARREL, 160, 142));
-    add(176, () => { blit(c, CHEST, 284, 176 - 14); if (!REDUCED && Tm % 3 < 0.5) { R(c, 290, 156, 1, 5, "#fff"); R(c, 288, 158, 5, 1, "#fff"); } });
+    add(176, () => { blit(c, CHEST, 284, 176 - 14); if (!REDUCED && TA % 3 < 0.5) { R(c, 290, 156, 1, 5, "#fff"); R(c, 288, 158, 5, 1, "#fff"); } });
     add(146, () => blit(c, TABLE, 248, 146 - 17));
     add(172, () => blit(c, BENCH, 30, 172 - 17));
     add(172, () => blit(c, PLANKS, 104, 172 - 8));
@@ -634,14 +644,14 @@
       R(c, 164, 119, 6, 2, "rgba(0,40,0,.25)");
       R(c, 166, 66, 2, 55, "#6e3b1a"); R(c, 165, 64, 4, 3, GOLD);
       for (let col = 0; col < 14; col++) {
-        const o = REDUCED ? 0 : Math.round(Math.sin(Tm * 3.5 + col * 0.6) * 1.4);
+        const o = REDUCED ? 0 : Math.round(Math.sin(TA * 3.5 + col * 0.6) * 1.4);
         R(c, 168 + col, 68 + o, 1, 9, "#15152a");
         if (col >= 4 && col <= 8) R(c, 168 + col, 70 + o, 1, 3, "#fff");
       }
     });
     // campfire
     add(164, () => {
-      const f = REDUCED ? 0 : Math.floor(Tm * 8) % 3;
+      const f = REDUCED ? 0 : Math.floor(TA * 8) % 3;
       for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5; R(c, 136 + Math.round(Math.cos(a) * 8), 164 + Math.round(Math.sin(a) * 4), 3, 2, i % 2 ? "#8c8c96" : "#a9a9b4"); }
       R(c, 130, 163, 12, 3, "#5a2f14"); R(c, 131, 162, 10, 1, "#3d1f0c");
       R(c, 132, 158, 8, 6, "#e8561a"); R(c, 133, 155 + (f % 2), 6, 7, "#f2b632"); R(c, 134, 160, 4, 3, "#fff2b0");
@@ -650,8 +660,8 @@
       R(c, 130, 146, 13, 7, "#2a2a32"); R(c, 129, 145, 15, 2, "#4a4a56"); R(c, 132, 147, 3, 1, "#6a6a78"); R(c, 131, 148, 11, 1, "#c8863a");
       R(c, 120, 170, 9, 3, "#6e3b1a"); R(c, 120, 170, 9, 1, "#a9753a"); R(c, 146, 171, 9, 3, "#6e3b1a"); R(c, 146, 171, 9, 1, "#a9753a");
       if (!REDUCED) for (let k = 0; k < 5; k++) {
-        const q = (Tm * 0.8 + k * 0.2) % 1;
-        R(c, 136 + Math.sin(Tm + k) * 3 + q * 6, 142 - q * 34, 2 + Math.floor(q * 3), 2 + Math.floor(q * 3), "rgba(245,245,250," + (0.75 * (1 - q)).toFixed(2) + ")");
+        const q = (TA * 0.8 + k * 0.2) % 1;
+        R(c, 136 + Math.sin(TA + k) * 3 + q * 6, 142 - q * 34, 2 + Math.floor(q * 3), 2 + Math.floor(q * 3), "rgba(245,245,250," + (0.75 * (1 - q)).toFixed(2) + ")");
       }
     });
     // cannon and its shot
@@ -672,15 +682,15 @@
     });
     // crab
     add(110, () => {
-      const cx = 182 + (REDUCED ? 0 : Math.round(Math.sin(Tm * 0.4) * 14)), f = REDUCED ? 0 : Math.floor(Tm * 6) % 2;
+      const cx = 182 + (REDUCED ? 0 : Math.round(Math.sin(TA * 0.4) * 14)), f = REDUCED ? 0 : Math.floor(TA * 6) % 2;
       R(c, cx, 108, 6, 3, "#e0453a"); R(c, cx + 1, 107, 4, 1, "#f0705a"); R(c, cx + 1, 107, 1, 1, DARK); R(c, cx + 4, 107, 1, 1, DARK);
       R(c, cx - 2, 106 - f, 2, 2, "#e0453a"); R(c, cx + 6, 106 - (1 - f), 2, 2, "#e0453a");
       R(c, cx, 111, 1, 1, "#a82a22"); R(c, cx + 2, 111, 1, 1, "#a82a22"); R(c, cx + 4, 111, 1, 1, "#a82a22");
     });
     // crew
-    ["mate", "qm", "nav", "cook", "carp", "gunner", "kid", "captain"].forEach(id => add(Math.round(at(ROUTES[id], Tm).y), () => drawCrew(c, id, Tm)));
+    ["mate", "qm", "nav", "cook", "carp", "gunner", "kid", "captain"].forEach(id => add(Math.round(at(ROUTES[id], Tm).y), () => drawCrew(c, id, Tm, TA)));
     add(20, () => {
-      const d = REDUCED || Math.sin(Tm * 0.6) >= 0 ? "r" : "l", s = d === "r" ? 1 : -1;
+      const d = REDUCED || Math.sin(TA * 0.6) >= 0 ? "r" : "l", s = d === "r" ? 1 : -1;
       SG.clearRect(0, 0, 64, 64);
       const h = person(SG, 32, 48, { ...LOOK.lookout, dir: d, hl: [s * 3, -5], hr: [s * 5, -6] });
       L(SG, h.r[0], h.r[1], h.r[0] + s * 6, h.r[1] - 3, "#c9a45a"); R(SG, h.r[0] + s * 6, h.r[1] - 4, 1, 3, GOLD);
@@ -691,10 +701,10 @@
     // parrot + gull shadows, then flyers on top
     add(1000, () => {
       for (let i = 0; i < 3; i++) {
-        const gx = ((i * 130 + (REDUCED ? 70 : Tm * 9)) % (W + 40)) - 20, gy = 14 + i * 20 + (REDUCED ? 0 : Math.round(Math.sin(Tm * 1.7 + i) * 3)), f = REDUCED ? 0 : Math.floor(Tm * 3 + i) % 2;
+        const gx = ((i * 130 + (REDUCED ? 70 : TA * 9)) % (W + 40)) - 20, gy = 14 + i * 20 + (REDUCED ? 0 : Math.round(Math.sin(TA * 1.7 + i) * 3)), f = REDUCED ? 0 : Math.floor(TA * 3 + i) % 2;
         R(c, gx - 3, gy + f, 3, 1, "#fff"); R(c, gx + 1, gy + f, 3, 1, "#fff"); R(c, gx - 1, gy + 1, 2, 1, "#fff");
       }
-      const t = REDUCED ? 1.2 : Tm, px = Math.round(160 + 100 * Math.sin(t * 0.35)), py = Math.round(70 + 24 * Math.sin(t * 0.7)), d = Math.cos(t * 0.35) >= 0 ? 1 : -1, f = REDUCED ? 0 : Math.floor(Tm * 8) % 2;
+      const t = REDUCED ? 1.2 : TA, px = Math.round(160 + 100 * Math.sin(t * 0.35)), py = Math.round(70 + 24 * Math.sin(t * 0.7)), d = Math.cos(t * 0.35) >= 0 ? 1 : -1, f = REDUCED ? 0 : Math.floor(TA * 8) % 2;
       R(c, px, py + 22, 6, 2, "rgba(0,20,0,.2)");
       R(c, px - d * 4 + (d > 0 ? 0 : 3), py + 1, 4, 1, "#2f6fb0");
       R(c, px, py, 5, 3, "#d8312a"); R(c, px + (d > 0 ? 5 : -2), py - 1, 3, 3, "#d8312a");
@@ -705,7 +715,7 @@
 
     // drifting cloud shadows
     for (let i = 0; i < 4; i++) {
-      const bx = ((i * 190 + (REDUCED ? 40 : Tm * 5)) % (WW + 100)) - PADX - 50, by = -60 + i * 90;
+      const bx = ((i * 190 + (REDUCED ? 40 : Math.floor(Tm * 5))) % (WW + 100)) - PADX - 50, by = -60 + i * 90;
       for (let dy = -12; dy <= 12; dy += 2) {
         const hw = Math.round(Math.sqrt(1 - (dy / 13) * (dy / 13)) * 36);
         R(c, bx - hw, by + dy, hw * 2, 2, "rgba(10,30,70,.09)");
@@ -717,9 +727,12 @@
   fit();
   if (REDUCED) draw(T0);
   else {
-    let last = 0;
+    // one draw per 1/60 s tick, so movement advances by a constant number of pixels per frame
+    let start = null, lastTick = -1;
     const loop = ts => {
-      if (ts - last >= 33) { last = ts; draw(ts / 1000 + T0); }
+      if (start === null) start = ts;
+      const tick = Math.floor((ts - start) * 60 / 1000);
+      if (tick !== lastTick) { lastTick = tick; draw(tick / 60 + T0); }
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
