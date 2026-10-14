@@ -196,7 +196,7 @@
     qm: mkRoute([N(276, 170, "write", 6, "r"), N(276, 154, "write", 4, "u")]),
     cook: mkRoute([N(118, 166, "stir", 7, "r"), N(118, 182), N(152, 182), N(152, 156, "taste", 3, "r"), N(152, 182), N(118, 182)]),
     carp: mkRoute([N(46, 178, "hammer", 7, "u"), N(46, 188), N(100, 188), N(100, 170, "saw", 5, "r"), N(100, 188), N(46, 188)]),
-    gunner: mkRoute([N(16, 114, "fire", 9, "r"), N(14, 114), N(14, 154), N(92, 154), N(92, 141, "sword", 5, "r"), N(92, 154), N(14, 154), N(14, 114), N(16, 114)]),
+    gunner: mkRoute([N(19, 116, "fire", 9, "r"), N(19, 154), N(92, 154), N(92, 141, "sword", 5, "r"), N(92, 154), N(19, 154)]),
     kid: mkRoute([N(98, 106, "fish", 100, "u")])
   };
 
@@ -274,52 +274,119 @@
     R(s, 4, 8, 2, 20, "#3a3a46"); R(s, 2, 26, 6, 2, "#3a3a46");
     R(s, 1, 1, 8, 8, "#3a3a46"); R(s, 2, 2, 6, 6, "#ffe27a"); R(s, 3, 3, 2, 2, "#fff6c8"); R(s, 4, 0, 2, 1, "#3a3a46");
   }, EDGE);
+  const ROCK = spr(20, 14, s => {
+    R(s, 1, 10, 18, 3, "rgba(0,30,70,.3)");
+    for (let y = 0; y < 11; y++) for (let x = 0; x < 20; x++) {
+      const dx = (x - 10) / 9.5, dy = (y - 6.5) / 5.5, d = dx * dx + dy * dy;
+      if (d > 1) continue;
+      const l = -dx * 0.5 - dy * 0.8;
+      R(s, x, y, 1, 1, d > 0.8 ? "#4e5560" : l > 0.35 ? "#b3bcc6" : l < -0.3 ? "#5f6874" : "#8b95a1");
+    }
+    R(s, 5, 1, 5, 2, "#6cae4a"); R(s, 7, 0, 2, 1, "#8fd05a");
+  }, "#2c323a");
   const STONE = spr(8, 6, s => { R(s, 0, 4, 8, 2, "rgba(0,40,0,.2)"); R(s, 1, 1, 6, 4, "#8c8c96"); R(s, 2, 0, 3, 1, "#a9a9b4"); R(s, 1, 1, 6, 1, "#a9a9b4"); R(s, 1, 4, 6, 1, "#5e5e68"); }, EDGE);
   const BUOY = spr(8, 12, s => { R(s, 1, 9, 6, 2, "rgba(0,30,80,.25)"); R(s, 2, 2, 4, 7, "#fff"); R(s, 2, 4, 4, 2, "#c8372d"); R(s, 3, 0, 2, 2, "#c8372d"); R(s, 3, 8, 2, 1, "#c8372d"); }, "#25405e");
 
   /* ================= world layers ================= */
   const WW = W + 2 * PADX, WH = H + 2 * PADY;
   const back = mkc(WW, WH), front = mkc(WW, WH);
-  // extra scenery around the 320x192 core, in world coordinates
-  const PADPROPS = [];
-  for (let i = 0; i < 60; i++) {
-    const x = -PADX + rnd(i + 1000) * WW, y = -PADY + rnd(i + 1100) * WH;
-    if (x > -4 && x < W + 4 && y > 0 && y < H + 4) continue;     // keep the core clear
-    if (y < SHORE + 22) continue;                                 // land only
-    if (PADPROPS.some(q => Math.abs(q.x - x) < 34 && Math.abs(q.y - y) < 26)) continue;   // no overlapping clumps
-    const r = rnd(i + 1200);
-    PADPROPS.push({ x, y, k: r < 0.55 ? "tree" : r < 0.85 ? "bush" : "stone", v: Math.floor(rnd(i + 1300) * 3) });
-  }
-  PADPROPS.sort((a, b) => a.y - b.y);
-
-  (function () {
-    const c = back.getContext("2d");
-    c.translate(PADX, PADY);
-    for (let y = -PADY; y < SHORE + 10; y++) {
-      const t = y < 0 ? 0 : Math.pow(Math.min(1, Math.floor(y / 8) * 8 / (SHORE + 4)), 1.4);
-      R(c, -PADX, y, WW, 1, y < 0 ? lerp("#2a74bd", "#1f5896", Math.min(1, Math.floor(-y / 8) * 8 / PADY)) : lerp("#2a74bd", "#69c8f4", t));
+  // ---- island outline: the north coast follows shoreY, the others are rounded, noisy edges ----
+  const westX = y => 9 + Math.round(15 * Math.pow(Math.min(1, Math.abs(y - 150) / 58), 3) + 3 * Math.sin(y / 8) + 2 * Math.sin(y / 3.7));
+  const eastX = y => 311 - Math.round(15 * Math.pow(Math.min(1, Math.abs(y - 150) / 58), 3) + 3 * Math.sin(y / 9 + 2) + 2 * Math.sin(y / 4.1));
+  const southY = x => 201 + Math.round(5 * Math.sin(x / 29) + 3 * Math.sin(x / 11 + 1)) - Math.round(18 * Math.pow(Math.min(1, Math.abs(x - 160) / 170), 4));
+  const isLand = (x, y) => y >= shoreY(x) && y <= southY(x) && x >= westX(y) && x <= eastX(y);
+  const MASK = new Uint8Array(WW * WH);
+  for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) MASK[y * WW + x] = isLand(x - PADX, y - PADY) ? 1 : 0;
+  // two-pass chamfer distance: DW = distance from water pixels to the nearest land, DL = from land to the nearest water
+  function distField(src) {
+    const D = new Float32Array(WW * WH);
+    for (let i = 0; i < D.length; i++) D[i] = MASK[i] === src ? 0 : 1e3;
+    for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
+      const i = y * WW + x; let d = D[i];
+      if (d === 0) continue;
+      if (x > 0) d = Math.min(d, D[i - 1] + 1);
+      if (y > 0) { d = Math.min(d, D[i - WW] + 1); if (x > 0) d = Math.min(d, D[i - WW - 1] + 1.4); if (x < WW - 1) d = Math.min(d, D[i - WW + 1] + 1.4); }
+      D[i] = d;
     }
+    for (let y = WH - 1; y >= 0; y--) for (let x = WW - 1; x >= 0; x--) {
+      const i = y * WW + x; let d = D[i];
+      if (d === 0) continue;
+      if (x < WW - 1) d = Math.min(d, D[i + 1] + 1);
+      if (y < WH - 1) { d = Math.min(d, D[i + WW] + 1); if (x < WW - 1) d = Math.min(d, D[i + WW + 1] + 1.4); if (x > 0) d = Math.min(d, D[i + WW - 1] + 1.4); }
+      D[i] = d;
+    }
+    return D;
+  }
+  const DW = distField(1), DL = distField(0);
+  const idx = (x, y) => (Math.round(y) + PADY) * WW + Math.round(x) + PADX;
+  const inWorld = (x, y) => x > -PADX && x < W + PADX - 1 && y > -PADY && y < H + PADY - 1;
+  const waterDist = (x, y) => inWorld(x, y) ? DW[idx(x, y)] : 99;      // 0 on land
+  const sandWidth = (x, y) => 8 + 2 * Math.sin(x / 6) + 1.5 * Math.sin(y / 5 + 1);
+  const sandAt = (x, y) => inWorld(x, y) && MASK[idx(x, y)] === 1 && DL[idx(x, y)] > 3 && DL[idx(x, y)] < sandWidth(x, y);
+  const grassAt = (x, y) => inWorld(x, y) && MASK[idx(x, y)] === 1 && DL[idx(x, y)] > sandWidth(x, y) + 2;
+  // coast pixels with an outward direction, used for the animated foam
+  const COAST = [];
+  for (let y = 1; y < WH - 1; y++) for (let x = 1; x < WW - 1; x++) {
+    const i = y * WW + x;
+    if (MASK[i] === 0 && DW[i] > 0 && DW[i] < 1.5) {
+      const gx = Math.sign(DW[i + 1] - DW[i - 1]), gy = Math.sign(DW[i + WW] - DW[i - WW]);
+      COAST.push([x - PADX, y - PADY, gx, gy, (x * 0.7 + y * 0.4)]);
+    }
+  }
+
+  // shallow-water bands around the island give it depth; farther out the sea darkens with the open ocean
+  (function () {
+    const c = back.getContext("2d"), im = c.createImageData(WW, WH), d = im.data;
+    const BANDS = [[1.5, "#e6faf2"], [3.5, "#b4ece4"], [6.5, "#84dce0"], [10.5, "#58c6e4"], [16.5, "#3fb0e0"], [26, "#3396d6"], [42, "#2a7fc8"], [1e9, "#2570bb"]].map(([t, h]) => [t, hex(h)]);
+    for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
+      const i = y * WW + x, o = i * 4;
+      let col;
+      if (MASK[i]) col = hex("#f3dc9a");
+      else {
+        const dw = DW[i], wy = y - PADY;
+        let k = 0; while (BANDS[k][0] < dw) k++;
+        if (k < BANDS.length - 1 && BANDS[k][0] - dw < 1 && ((x + y) & 1)) k++;
+        col = BANDS[k][1];
+        if (k === BANDS.length - 1 && wy < 0) {        // deep water to the north gets darker in steps
+          const t = Math.min(1, Math.floor(-wy / 16) * 16 / PADY);
+          col = [Math.round(col[0] - 20 * t), Math.round(col[1] - 30 * t), Math.round(col[2] - 30 * t)];
+        }
+      }
+      d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = 255;
+    }
+    c.putImageData(im, 0, 0);
   })();
+
   (function () {
     const c = front.getContext("2d");
     c.translate(PADX, PADY);
     const PATH = [[70, 160], [108, 164], [150, 152], [188, 130], [214, 114], [233, 102]];
-    for (let x = -PADX; x < W + PADX; x++) {
-      const sy = shoreY(x), gt = grassTop(x);
-      R(c, x, sy, 1, gt - sy, "#f3dc9a");
-      R(c, x, sy, 1, 3, "#e0c27a"); R(c, x, sy + 3, 1, 2, "#ead08a");
-      R(c, x, gt, 1, H + PADY - gt, "#7fc64f");
-      if (x % 2 === 0) R(c, x, gt, 1, 1, "#f3dc9a"); else R(c, x, gt + 1, 1, 1, "#f3dc9a");
+    {
+      const im = c.createImageData(WW, WH), d = im.data;
+      const SAND = hex("#f3dc9a"), WET1 = hex("#d9bd74"), WET2 = hex("#e6cc84"), GRASS = hex("#7fc64f");
+      for (let y = 0; y < WH; y++) for (let x = 0; x < WW; x++) {
+        const i = y * WW + x;
+        if (!MASK[i]) continue;
+        const wx = x - PADX, wy = y - PADY, dl = DL[i], sw = sandWidth(wx, wy);
+        let col;
+        if (dl <= 1.5) col = WET1;
+        else if (dl <= 3.5) col = WET2;
+        else if (dl < sw) col = SAND;
+        else if (dl < sw + 2) col = ((x + y) & 1) ? SAND : GRASS;
+        else col = GRASS;
+        const o = i * 4; d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = 255;
+      }
+      const tmp = mkc(WW, WH); tmp.getContext("2d").putImageData(im, 0, 0);
+      c.drawImage(tmp, -PADX, -PADY);
     }
-    const area = WW * (H + PADY - SHORE);
-    for (let i = 0; i < 520; i++) {
-      const x = -PADX + rnd(i + 11) * WW, y = SHORE + 8 + rnd(i + 77) * (H + PADY - SHORE - 8);
-      if (y > grassTop(x) + 1) { const w = 5 + Math.floor(rnd(i + 5) * 8); R(c, x, y, w, 2, "#8fd05a"); R(c, x + 1, y - 1, w - 2, 1, "#8fd05a"); }
-      if (i % 3 === 0) { const x2 = -PADX + rnd(i + 31) * WW, y2 = SHORE + 8 + rnd(i + 91) * (H + PADY - SHORE - 8); if (y2 > grassTop(x2) + 1) R(c, x2, y2, 8, 3, "#72b844"); }
+    for (let i = 0; i < 900; i++) {
+      const x = -PADX + rnd(i + 11) * WW, y = rnd(i + 77) * H;
+      if (grassAt(x, y)) { const w = 5 + Math.floor(rnd(i + 5) * 8); R(c, x, y, w, 2, "#8fd05a"); R(c, x + 1, y - 1, w - 2, 1, "#8fd05a"); }
+      if (i % 3 === 0) { const x2 = -PADX + rnd(i + 31) * WW, y2 = rnd(i + 91) * H; if (grassAt(x2, y2)) R(c, x2, y2, 8, 3, "#72b844"); }
     }
-    for (let i = 0; i < 400; i++) {
-      const x = -PADX + rnd(i + 200) * WW, y = SHORE + 12 + rnd(i + 300) * (H + PADY - SHORE - 12);
-      if (y > grassTop(x) + 2) { R(c, x, y, 1, 2, "#5fa83a"); R(c, x + 2, y, 1, 2, "#5fa83a"); R(c, x + 1, y + 1, 1, 1, "#5fa83a"); }
+    for (let i = 0; i < 700; i++) {
+      const x = -PADX + rnd(i + 200) * WW, y = rnd(i + 300) * H;
+      if (grassAt(x, y)) { R(c, x, y, 1, 2, "#5fa83a"); R(c, x + 2, y, 1, 2, "#5fa83a"); R(c, x + 1, y + 1, 1, 1, "#5fa83a"); }
     }
     const dirt = (r, col) => {
       for (let s = 0; s < PATH.length - 1; s++) {
@@ -335,12 +402,12 @@
       const s = Math.floor(rnd(i + 900) * (PATH.length - 1)), t = rnd(i + 910), [x0, y0] = PATH[s], [x1, y1] = PATH[s + 1];
       R(c, x0 + (x1 - x0) * t + rnd(i + 920) * 8 - 4, y0 + (y1 - y0) * t + rnd(i + 930) * 8 - 4, 1, 1, i % 2 ? "#bf935a" : "#e6c690");
     }
-    for (let i = 0; i < 260; i++) { const x = -PADX + rnd(i + 400) * WW, y = SHORE + 5 + rnd(i + 410) * 16; if (y > shoreY(x) + 5 && y < grassTop(x)) R(c, x, y, 1, 1, i % 3 ? "#dcbf74" : "#fff3c0"); }
-    [[40, 106], [172, 109], [276, 108], [-60, 108], [350, 107]].forEach(([x, y]) => { R(c, x, y, 3, 2, "#f2a0a8"); R(c, x + 1, y - 1, 1, 1, "#fff"); });
+    for (let i = 0; i < 700; i++) { const x = -PADX + rnd(i + 400) * WW, y = rnd(i + 410) * H; if (sandAt(x, y)) R(c, x, y, 1, 1, i % 3 ? "#dcbf74" : "#fff3c0"); }
+    [[40, 105], [172, 104], [276, 106], [14, 160], [300, 190], [150, 198]].forEach(([x, y]) => { R(c, x, y, 3, 2, "#f2a0a8"); R(c, x + 1, y - 1, 1, 1, "#fff"); });
     const FL = ["#ffffff", "#ffd35c", "#f28ab0", "#a58af0", "#ff8a5c"];
-    for (let i = 0; i < 230; i++) {
-      const x = -PADX + rnd(i + 500) * WW, y = SHORE + 20 + rnd(i + 600) * (H + PADY - SHORE - 20);
-      if (y < grassTop(x) + 3) continue;
+    for (let i = 0; i < 400; i++) {
+      const x = -PADX + rnd(i + 500) * WW, y = rnd(i + 600) * H;
+      if (!grassAt(x, y)) continue;
       const col = FL[i % FL.length];
       R(c, x - 1, y, 1, 1, col); R(c, x + 1, y, 1, 1, col); R(c, x, y - 1, 1, 1, col); R(c, x, y + 1, 1, 1, col); R(c, x, y, 1, 1, "#ffe27a");
     }
@@ -697,38 +764,35 @@
       const y = k * 8 + 6, len = 6 + (((k % 3) + 3) % 3) * 3;
       for (let i = 0; i < 9; i++) {
         const x = Math.floor(((i * 67 + k * 23 + TA * (3 + (((k % 3) + 3) % 3))) % span + span) % span) - PADX;
-        if (x > vx0 - 14 && x < vx1 && y < shoreY(x) - 6) { R(c, x, y, len, 1, "rgba(255,255,255,.28)"); R(c, x + len + 3, y + 1, 3, 1, "rgba(255,255,255,.2)"); }
+        if (x > vx0 - 14 && x < vx1 && waterDist(x, y) > 6) { R(c, x, y, len, 1, "rgba(255,255,255,.28)"); R(c, x + len + 3, y + 1, 3, 1, "rgba(255,255,255,.2)"); }
       }
     }
     for (let gx = Math.floor(vx0 / 20); gx <= Math.floor(vx1 / 20); gx++) for (let gy = Math.floor(vy0 / 14); gy <= Math.floor(Math.min(vy1, SHORE - 8) / 14); gy++) {
       const s = gx * 131 + gy * 977, x = gx * 20 + rnd(s) * 18, y = gy * 14 + rnd(s + 5) * 12;
-      if (rnd(s + 9) < 0.45 && ((TA * 0.9 + rnd(s + 3) * 5) % 2) < 0.3 && y < shoreY(x) - 6) { R(c, x, y - 1, 1, 3, "#fff"); R(c, x - 1, y, 3, 1, "#fff"); }
+      if (rnd(s + 9) < 0.45 && ((TA * 0.9 + rnd(s + 3) * 5) % 2) < 0.3 && waterDist(x, y) > 5) { R(c, x, y - 1, 1, 3, "#fff"); R(c, x - 1, y, 3, 1, "#fff"); }
     }
     // buoys bobbing in the open water
-    [[-70, 40], [20, 18], [150, 50], [330, 30], [-30, -60], [260, -50], [180, -110]].forEach(([x, y], i) => {
+    [[-70, 40], [20, 18], [150, 50], [330, 30], [-30, -60], [260, -50], [180, -110], [-40, 170], [350, 160], [90, 232], [240, 238]].forEach(([x, y], i) => {
       if (x > vx0 - 10 && x < vx1 && y > vy0 - 14 && y < vy1) blit(c, BUOY, x, y + (REDUCED ? 0 : Math.round(Math.sin(TA * 1.6 + i))));
     });
 
     drawShip(c, TA);
     c.drawImage(front, -PADX, -PADY);
-    for (let x = vx0; x < vx1; x++) {
-      const w = REDUCED ? 1 : Math.floor((Math.sin(TA * 1.5 + x / 14) + 1) * 1.3), sy = shoreY(x);
-      R(c, x, sy - 1 - w, 1, 1, "#fff"); if (w > 0) R(c, x, sy - 2 - w, 1, 1, "rgba(255,255,255,.55)");
+    // foam creeps up and down the whole coastline
+    for (const [x, y, gx, gy, ph] of COAST) {
+      if (x < vx0 - 2 || x > vx1 + 2 || y < vy0 - 2 || y > vy1 + 2) continue;
+      const w = REDUCED ? 1 : Math.floor((Math.sin(TA * 1.5 + ph / 6) + 1) * 1.3);
+      R(c, x + gx * w, y + gy * w, 1, 1, "#ffffff");
+      if (w > 0) R(c, x + gx * (w + 1), y + gy * (w + 1), 1, 1, "rgba(255,255,255,.5)");
     }
 
     const E = [];
     const add = (y, fn) => E.push({ y, fn });
-    // pad scenery
-    PADPROPS.forEach(p => {
-      if (p.x < vx0 - 30 || p.x > vx1 + 30 || p.y < vy0 - 10 || p.y > vy1 + 40) return;
-      add(p.y, () => p.k === "tree" ? drawPalm(c, p.x, p.y, TA, p.v, 26 + p.v * 3, p.v % 2 ? 1 : -1) : p.k === "bush" ? blit(c, BUSH, p.x - 10, p.y - 13) : blit(c, STONE, p.x - 4, p.y - 5));
-    });
     // core scenery
     add(172, () => blit(c, TENT, 172, 172 - 26));
-    [[10, 180], [304, 168], [320, 150], [236, 190]].forEach(([x, y], i) => add(y, () => drawPalm(c, x, y, TA, i, 28 + (i % 3) * 2, i % 2 ? 1 : -1)));
-    [[-4, 168], [330, 190], [348, 134], [-16, 130]].forEach(([x, y], i) => add(y, () => drawPalm(c, x, y, TA, i + 1, 27 + (i % 3) * 2, i % 2 ? -1 : 1)));
-    [[60, 174], [232, 150], [124, 190], [300, 150], [4, 150], [256, 190]].forEach(([x, y]) => add(y, () => blit(c, BUSH, x - 10, y - 13)));
-    add(122, () => drawPalm(c, 12, 122, TA, 0, 30, 1));
+    [[28, 180], [306, 186], [302, 128], [228, 192], [60, 193], [112, 197], [182, 198], [262, 197], [34, 138]].forEach(([x, y], i) => add(y, () => drawPalm(c, x, y, TA, i, 27 + (i % 3) * 2, i % 2 ? 1 : -1)));
+    [[60, 174], [232, 150], [124, 190], [284, 190], [24, 154], [212, 192], [20, 184]].forEach(([x, y]) => add(y, () => blit(c, BUSH, x - 10, y - 13)));
+    add(124, () => drawPalm(c, 22, 124, TA, 0, 30, 1));
     add(116, () => drawPalm(c, 118, 116, TA, 2, 26, -1));
     add(112, () => drawPalm(c, 300, 112, TA, 4, 28, 1));
     add(120, () => { blit(c, BARREL, 172, 107); blit(c, CRATE, 181, 111); blit(c, CRATE, 190, 111); blit(c, CRATE, 185, 102); });
@@ -742,6 +806,10 @@
     add(140, () => blit(c, DUMMY, 99, 140 - 25));
     add(112, () => blit(c, LAMP, 244, 112 - 28));
     add(160, () => blit(c, LAMP, 62, 160 - 28));
+    [[-6, 150], [326, 118], [334, 176], [150, 214], [52, 222], [262, 218], [-10, 196], [-18, 112]].forEach(([x, y], i) => add(y, () => {
+      blit(c, ROCK, x - 10, y - 11);
+      if (!REDUCED) { const w = Math.floor((Math.sin(TA * 1.5 + i) + 1) * 1.2); R(c, x - 11 - w, y, 2, 1, "rgba(255,255,255,.8)"); R(c, x + 10 + w, y, 2, 1, "rgba(255,255,255,.8)"); R(c, x - 8, y + 2 + w, 16, 1, "rgba(255,255,255,.55)"); }
+    }));
     add(125, () => blit(c, STONE, 66, 122)); add(190, () => blit(c, STONE, 120, 186)); add(130, () => blit(c, STONE, 250, 124));
     // flagpole
     add(120, () => {
@@ -781,11 +849,11 @@
       }
     });
     // crab
-    add(110, () => {
+    add(108, () => {
       const cx = 182 + (REDUCED ? 0 : Math.round(Math.sin(TA * 0.4) * 14)), f = REDUCED ? 0 : Math.floor(TA * 6) % 2;
-      R(c, cx, 108, 6, 3, "#e0453a"); R(c, cx + 1, 107, 4, 1, "#f0705a"); R(c, cx + 1, 107, 1, 1, DARK); R(c, cx + 4, 107, 1, 1, DARK);
-      R(c, cx - 2, 106 - f, 2, 2, "#e0453a"); R(c, cx + 6, 106 - (1 - f), 2, 2, "#e0453a");
-      R(c, cx, 111, 1, 1, "#a82a22"); R(c, cx + 2, 111, 1, 1, "#a82a22"); R(c, cx + 4, 111, 1, 1, "#a82a22");
+      R(c, cx, 105, 6, 3, "#e0453a"); R(c, cx + 1, 104, 4, 1, "#f0705a"); R(c, cx + 1, 104, 1, 1, DARK); R(c, cx + 4, 104, 1, 1, DARK);
+      R(c, cx - 2, 103 - f, 2, 2, "#e0453a"); R(c, cx + 6, 103 - (1 - f), 2, 2, "#e0453a");
+      R(c, cx, 108, 1, 1, "#a82a22"); R(c, cx + 2, 108, 1, 1, "#a82a22"); R(c, cx + 4, 108, 1, 1, "#a82a22");
     });
     // crew
     ["mate", "qm", "nav", "cook", "carp", "gunner", "kid", "captain"].forEach(id => add(Math.round(at(ROUTES[id], Tm).y), () => drawCrew(c, id, Tm, TA)));
