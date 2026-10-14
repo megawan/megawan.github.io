@@ -201,47 +201,6 @@
   };
 
   /* ================= static sprites (outlined) ================= */
-  // Round leaf clump, lit from the upper left; overlapping clumps give the scalloped Stardew canopy.
-  function clump(g, cx, cy, r, pal) {
-    for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
-      const d = Math.sqrt(x * x + y * y);
-      if (d > r + 0.3) continue;
-      const l = (-x * 0.6 - y * 0.8) / r;   // +1 upper left .. -1 lower right
-      let col = pal.mid;
-      if (d > r - 1.1) col = l < -0.15 ? pal.rim : pal.hi;
-      else if (l > 0.38 + (((x + y) & 1) ? 0.12 : -0.12)) col = pal.hi;
-      else if (l < -0.4 + (((x + y) & 1) ? 0.12 : -0.12)) col = pal.lo;
-      R(g, cx + x, cy + y, 1, 1, col);
-    }
-  }
-  const OAK = (pal, fruit) => spr(44, 46, g => {
-    R(g, 8, 38, 28, 6, "rgba(0,40,0,.25)");
-    // trunk with roots and bark
-    R(g, 19, 28, 6, 14, "#6b3b1a"); R(g, 19, 28, 2, 14, "#8a5a2b"); R(g, 23, 28, 2, 14, "#4e2a12");
-    R(g, 16, 40, 4, 3, "#6b3b1a"); R(g, 24, 40, 4, 3, "#4e2a12"); R(g, 20, 33, 1, 3, "#4e2a12"); R(g, 22, 36, 1, 3, "#8a5a2b");
-    // canopy: back clumps first
-    [[22, 12, 9], [12, 16, 8], [32, 16, 8], [17, 9, 7], [28, 9, 7], [22, 19, 10], [10, 23, 6], [34, 23, 6], [22, 26, 7]].forEach(([x, y, r]) => clump(g, x, y, r, pal));
-    if (fruit) [[14, 16], [29, 20], [21, 24], [32, 13], [11, 24], [22, 12]].forEach(([x, y]) => { R(g, x, y, 2, 2, "#e8453a"); R(g, x, y, 1, 1, "#ffa090"); });
-  }, "#1c4a22");
-  const PAL_A = { hi: "#9be05a", mid: "#5db440", lo: "#3f8f33", rim: "#2a6a2a" };
-  const PAL_B = { hi: "#a8d850", mid: "#6fb23f", lo: "#4a9238", rim: "#2f6e2e" };
-  const PINE = spr(30, 46, g => {
-    R(g, 5, 38, 20, 6, "rgba(0,40,0,.25)");
-    R(g, 13, 34, 4, 9, "#6b3b1a"); R(g, 13, 34, 1, 9, "#8a5a2b"); R(g, 16, 34, 1, 9, "#4e2a12");
-    [[3, 24, 24], [6, 15, 18], [9, 6, 12]].forEach(([y, , w], t) => {
-      const top = [4, 12, 20][t], h = [11, 12, 14][t] + 2, cx = 15;
-      for (let r = 0; r < h; r++) {
-        const half = Math.round((r + 1) / h * (w / 2 + 1));
-        for (let x = -half; x <= half; x++) {
-          const l = -x / (half + 1) * 0.7 - r / h * 0.3;
-          R(g, cx + x, top + r, 1, 1, r === h - 1 || x === half ? "#1f5a2a" : l > 0.25 ? "#5cb34a" : l < -0.3 ? "#2c7a38" : "#3f9a42");
-        }
-      }
-    });
-  }, "#163a1e");
-  const TREES = [OAK(PAL_A, true), OAK(PAL_B, false), PINE];
-  TREES[0]._ax = 22; TREES[0]._ay = 42; TREES[1]._ax = 22; TREES[1]._ay = 42; TREES[2]._ax = 15; TREES[2]._ay = 43;
-  const tree = (c, i, x, y) => { const t = TREES[i % 3]; blit(c, t, x - t._ax, y - t._ay); };
   const BUSH = spr(20, 14, s => {
     R(s, 1, 11, 18, 3, "rgba(0,40,0,.22)");
     for (let y = 0; y < 12; y++) for (let x = 0; x < 20; x++) {
@@ -252,24 +211,6 @@
     }
     [[5, 5], [12, 4], [9, 8], [15, 7]].forEach(([x, y]) => R(s, x, y, 2, 2, "#e0508a"));
   }, "#1c4a22");
-  const CABIN = spr(66, 58, s => {
-    R(s, 5, 24, 56, 28, "#b88348");
-    for (let y = 27; y < 50; y += 4) R(s, 5, y, 56, 1, "#94642f");
-    R(s, 5, 48, 56, 4, "#8c8c96"); for (let x = 5; x < 61; x += 7) R(s, x, 48, 1, 4, "#6e6e78");
-    R(s, 5, 24, 2, 28, "#d4a064"); R(s, 59, 24, 2, 28, "#8a5a2b");
-    for (let r = 0; r < 18; r++) {
-      const col = Math.floor(r / 3) % 2 ? "#c8372d" : "#b22d25";
-      R(s, 0, 8 + r, 66, 1, r % 3 === 2 ? "#8a1f19" : col);
-      if (r % 3 !== 2) for (let x = (Math.floor(r / 3) % 2) * 4; x < 66; x += 8) R(s, x, 8 + r, 1, 1, "#8a1f19");
-    }
-    R(s, 0, 6, 66, 2, "#e0605a"); R(s, 0, 26, 66, 2, "#5a1410");
-    R(s, 46, 0, 8, 12, "#8c8c96"); R(s, 46, 0, 8, 2, "#b4b4c0"); R(s, 46, 4, 8, 1, "#6e6e78"); R(s, 46, 8, 8, 1, "#6e6e78");
-    R(s, 27, 34, 11, 18, "#4a2a12"); R(s, 28, 35, 9, 17, "#5e3a1a"); R(s, 35, 43, 1, 2, GOLD);
-    R(s, 24, 33, 17, 2, "#8a5a2b");
-    [[10, 35], [45, 35]].forEach(([x, y]) => { R(s, x - 1, y - 1, 12, 11, "#6e3b1a"); R(s, x, y, 10, 9, "#ffe27a"); R(s, x + 4, y, 2, 9, "#8a5a2b"); R(s, x, y + 4, 10, 2, "#8a5a2b"); R(s, x, y + 9, 10, 1, "#fff2b0"); });
-    R(s, 61, 28, 1, 14, "#4a2a12"); R(s, 61, 28, 5, 1, "#4a2a12");
-    R(s, 59, 35, 7, 7, "#e0c27a"); R(s, 59, 35, 7, 1, "#8a5a2b"); R(s, 61, 37, 3, 2, "#1a1a2e"); R(s, 62, 39, 1, 2, "#1a1a2e");
-  }, EDGE);
   const TENT = spr(38, 28, s => {
     R(s, 2, 24, 34, 3, "rgba(0,40,0,.22)");
     for (let r = 0; r < 22; r++) {
@@ -362,7 +303,7 @@
   (function () {
     const c = front.getContext("2d");
     c.translate(PADX, PADY);
-    const PATH = [[46, 152], [70, 160], [108, 164], [150, 152], [188, 130], [214, 114], [233, 102]];
+    const PATH = [[70, 160], [108, 164], [150, 152], [188, 130], [214, 114], [233, 102]];
     for (let x = -PADX; x < W + PADX; x++) {
       const sy = shoreY(x), gt = grassTop(x);
       R(c, x, sy, 1, gt - sy, "#f3dc9a");
@@ -403,9 +344,6 @@
       const col = FL[i % FL.length];
       R(c, x - 1, y, 1, 1, col); R(c, x + 1, y, 1, 1, col); R(c, x, y - 1, 1, 1, col); R(c, x, y + 1, 1, 1, col); R(c, x, y, 1, 1, "#ffe27a");
     }
-    // fence along the lower right
-    for (let x = 252; x <= 316; x += 8) { R(c, x, 180, 3, 10, "#a9753a"); R(c, x, 180, 3, 1, "#d2a35e"); R(c, x, 189, 3, 1, "#6e3b1a"); }
-    R(c, 252, 183, 67, 2, "#8a5a2b"); R(c, 252, 187, 67, 2, "#8a5a2b"); R(c, 252, 183, 67, 1, "#c99a58");
     // pier
     R(c, 224, 78, 18, 26, "rgba(8,40,80,.28)");
     for (let k = 0; k < 3; k++) { R(c, 225, 80 + k * 10, 3, 7, "#4a2a12"); R(c, 239, 80 + k * 10, 3, 7, "#4a2a12"); R(c, 225, 80 + k * 10, 3, 2, "#8a5a2b"); R(c, 239, 80 + k * 10, 3, 2, "#8a5a2b"); }
@@ -441,7 +379,6 @@
   /* ================= dynamic bits ================= */
   const SC = mkc(64, 64), SG = SC.getContext("2d");           // crew scratch (feet at 32,48)
   const SHC = mkc(140, 96), SHG = SHC.getContext("2d");        // ship scratch (world x 180..320)
-  const PLC = mkc(60, 66), PLG = PLC.getContext("2d");         // palm scratch (trunk base at 30,56)
 
   // One drooping palm frond: a tapered, notched leaf along a curve, light above and dark below.
   function frond(g, cx, cy, deg, len, droop, pal) {
@@ -459,7 +396,7 @@
       }
     }
   }
-  function palm(g, x, y, T, ph, h, lean) {
+  function palm(g, x, y, T, ph, h, lean, swayPx) {
     // trunk: gentle curve, tapering, with ring marks and a flared base
     let tx = x, ty = y;
     for (let i = 0; i < h; i++) {
@@ -476,20 +413,31 @@
     R(g, tx + 2, ty + 3, 3, 3, "#4e2a12"); R(g, tx + 2, ty + 3, 1, 1, "#8a5a2b");
     R(g, tx - 1, ty + 4, 3, 3, "#5a3a1a"); R(g, tx - 1, ty + 4, 1, 1, "#9a6a38");
     // fronds: back ones darker, then the front ones, swaying a little in the wind
-    const sw = REDUCED ? 0 : Math.sin(T * 1.1 + ph) * 5;
+    const sw = swayPx || 0;
     const back = { hi: "#4f9a35", mid: "#3a8a2a", lo: "#2a6e22", spine: "#1f5a1a" };
     const front = { hi: "#8fe05a", mid: "#58b83a", lo: "#357f27", spine: "#2a6a1f" };
     [[100, 12, 0.5], [75, 12, 0.6], [125, 13, 0.7]].forEach(([d, l, dr]) => frond(g, tx, ty, d + sw * 0.5, l, dr, back));
     [[172, 19, 0.9], [8, 19, 0.9], [150, 18, 0.8], [30, 18, 0.8], [118, 15, 0.7], [62, 15, 0.7], [200, 14, 1.1], [-20, 14, 1.1]]
       .forEach(([d, l, dr], i) => frond(g, tx, ty + 1, d + sw * (i % 2 ? 1 : -1) * (d > 90 && d < 180 ? 0.6 : 0.6), l, dr, front));
   }
+  const PALM_CACHE = {};
+  function palmSprite(h, lean, k) {
+    const key = h + "/" + lean + "/" + k;
+    if (!PALM_CACHE[key]) {
+      const c = mkc(60, 66), g = c.getContext("2d");
+      // k picks one of 8 evenly spaced sway positions, so each frame is drawn once and reused
+      palm(g, 30, 56, 0, 0, h, lean, Math.sin(k * Math.PI / 4) * 5);
+      edge(g, 60, 66, "#1c4a22");
+      PALM_CACHE[key] = c;
+    }
+    return PALM_CACHE[key];
+  }
   function drawPalm(c, x, y, T, ph, h, lean) {
     R(c, x - 4, y - 1, 12, 3, "rgba(0,40,0,.25)");
-    PLG.clearRect(0, 0, 60, 66);
-    palm(PLG, 30, 56, T, ph, h, lean);
-    edge(PLG, 60, 66, "#1c4a22");
-    c.drawImage(PLC, Math.round(x) - 30, Math.round(y) - 56);
+    const k = REDUCED ? 0 : Math.floor((T + ph * 0.9) / 0.7) % 8;
+    c.drawImage(palmSprite(h, lean, (k + 8) % 8), Math.round(x) - 30, Math.round(y) - 56);
   }
+
 
   function tri(g, x0, y0, x1, y1, x2, y2, col) {
     const E = [[x0, y0, x1, y1], [x1, y1, x2, y2], [x2, y2, x0, y0]];
@@ -773,19 +721,12 @@
     // pad scenery
     PADPROPS.forEach(p => {
       if (p.x < vx0 - 30 || p.x > vx1 + 30 || p.y < vy0 - 10 || p.y > vy1 + 40) return;
-      add(p.y, () => p.k === "tree" ? tree(c, p.v, p.x, p.y) : p.k === "bush" ? blit(c, BUSH, p.x - 10, p.y - 13) : blit(c, STONE, p.x - 4, p.y - 5));
+      add(p.y, () => p.k === "tree" ? drawPalm(c, p.x, p.y, TA, p.v, 26 + p.v * 3, p.v % 2 ? 1 : -1) : p.k === "bush" ? blit(c, BUSH, p.x - 10, p.y - 13) : blit(c, STONE, p.x - 4, p.y - 5));
     });
     // core scenery
-    add(148, () => {
-      blit(c, CABIN, 17, 148 - 52);
-      if (!REDUCED) for (let k = 0; k < 4; k++) {
-        const q = (TA * 0.5 + k * 0.25) % 1;
-        R(c, 63 + Math.sin(TA + k) * 2 + q * 6, 90 - q * 26, 2 + Math.floor(q * 3), 2 + Math.floor(q * 3), "rgba(240,240,245," + (0.8 * (1 - q)).toFixed(2) + ")");
-      }
-    });
     add(172, () => blit(c, TENT, 172, 172 - 26));
-    [[10, 180], [304, 168], [320, 150], [236, 190]].forEach(([x, y], i) => add(y, () => tree(c, i, x, y)));
-    [[-4, 168], [330, 190], [348, 134], [-16, 130]].forEach(([x, y], i) => add(y, () => tree(c, i + 1, x, y)));
+    [[10, 180], [304, 168], [320, 150], [236, 190]].forEach(([x, y], i) => add(y, () => drawPalm(c, x, y, TA, i, 28 + (i % 3) * 2, i % 2 ? 1 : -1)));
+    [[-4, 168], [330, 190], [348, 134], [-16, 130]].forEach(([x, y], i) => add(y, () => drawPalm(c, x, y, TA, i + 1, 27 + (i % 3) * 2, i % 2 ? -1 : 1)));
     [[60, 174], [232, 150], [124, 190], [300, 150], [4, 150], [256, 190]].forEach(([x, y]) => add(y, () => blit(c, BUSH, x - 10, y - 13)));
     add(122, () => drawPalm(c, 12, 122, TA, 0, 30, 1));
     add(116, () => drawPalm(c, 118, 116, TA, 2, 26, -1));
