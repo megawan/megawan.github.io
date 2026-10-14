@@ -84,7 +84,7 @@
   // dir: d u l r. step 0..3 = walk cycle. hl / hr = hand offsets from each shoulder.
   // Returns the absolute hand positions so tools can be attached exactly.
   function person(c, x, y, o) {
-    const d = o.dir || "d", st = o.step || 0, u = st & 1 ? 1 : 0, hair = o.hair || "#5a2f14";
+    const skin = o.skin || SKIN, d = o.dir || "d", st = o.step || 0, u = st & 1 ? 1 : 0, hair = o.hair || "#5a2f14";
     const side = d === "l" || d === "r", f = d === "r" ? 1 : -1;
     if (side) {
       const a = st === 1 ? 1 : st === 3 ? -1 : 0;
@@ -104,12 +104,12 @@
     const hl = o.hl || [0, 4], hr = o.hr || [0, 4];
     const HL = [x - 4 + hl[0], ty + 1 + hl[1]], HR = [x + 3 + hr[0], ty + 1 + hr[1]];
     const arms = () => {
-      L(c, x - 4, ty + 1, HL[0], HL[1], o.shirt); R(c, HL[0], HL[1], 1, 1, SKIN);
-      L(c, x + 3, ty + 1, HR[0], HR[1], o.shirt); R(c, HR[0], HR[1], 1, 1, SKIN);
+      L(c, x - 4, ty + 1, HL[0], HL[1], o.shirt); R(c, HL[0], HL[1], 1, 1, skin);
+      L(c, x + 3, ty + 1, HR[0], HR[1], o.shirt); R(c, HR[0], HR[1], 1, 1, skin);
     };
     if (d !== "u") arms();
     const hy = y - 19 + u;
-    R(c, x - 4, hy, 8, 7, SKIN);
+    R(c, x - 4, hy, 8, 7, skin);
     if (d === "u") { R(c, x - 4, hy, 8, 6, hair); R(c, x - 3, hy + 6, 6, 1, hair); }
     else if (d === "d") {
       R(c, x - 4, hy, 8, 3, hair); R(c, x - 4, hy + 3, 1, 2, hair); R(c, x + 3, hy + 3, 1, 2, hair);
@@ -117,8 +117,13 @@
       R(c, x - 3, hy + 5, 1, 1, "#f0a090"); R(c, x + 2, hy + 5, 1, 1, "#f0a090");
     } else {
       R(c, x - 4, hy, 8, 3, hair);
-      if (d === "r") { R(c, x - 4, hy + 3, 4, 3, hair); R(c, x + 2, hy + 3, 1, 2, DARK); R(c, x + 4, hy + 4, 1, 1, SKIN); R(c, x + 2, hy + 5, 1, 1, "#f0a090"); }
-      else { R(c, x, hy + 3, 4, 3, hair); R(c, x - 3, hy + 3, 1, 2, DARK); R(c, x - 5, hy + 4, 1, 1, SKIN); R(c, x - 3, hy + 5, 1, 1, "#f0a090"); }
+      if (d === "r") { R(c, x - 4, hy + 3, 4, 3, hair); R(c, x + 2, hy + 3, 1, 2, DARK); R(c, x + 4, hy + 4, 1, 1, skin); R(c, x + 2, hy + 5, 1, 1, "#f0a090"); }
+      else { R(c, x, hy + 3, 4, 3, hair); R(c, x - 3, hy + 3, 1, 2, DARK); R(c, x - 5, hy + 4, 1, 1, skin); R(c, x - 3, hy + 5, 1, 1, "#f0a090"); }
+    }
+    if (o.sockets) {      // skeleton: deep eye sockets and a row of teeth
+      if (d === "d") { R(c, x - 3, hy + 2, 2, 3, "#14110a"); R(c, x + 1, hy + 2, 2, 3, "#14110a"); }
+      else if (d === "r") R(c, x + 1, hy + 2, 2, 3, "#14110a"); else R(c, x - 3, hy + 2, 2, 3, "#14110a");
+      R(c, x - 2, hy + 6, 4, 1, "#14110a"); R(c, x - 1, hy + 6, 1, 1, "#e8e4d2"); R(c, x + 1, hy + 6, 1, 1, "#e8e4d2");
     }
     if (o.glasses && d === "d") { R(c, x - 3, hy + 2, 3, 1, "#c9c9d0"); R(c, x, hy + 2, 3, 1, "#c9c9d0"); }
     if (o.patch && d === "d") { R(c, x + 1, hy + 3, 2, 2, "#000"); R(c, x - 4, hy + 2, 8, 1, "#000"); }
@@ -153,6 +158,8 @@
     gunner:  { hat: "band", band: "#15151c", hair: "#15151c", shirt: "#4a4a52", pants: "#22222a", beard: "#2a1c10" },
     cook:    { hat: "chef", shirt: "#f4f4ee", pants: "#3a3a40", apron: 1, hair: "#5a2f14" },
     carp:    { hat: "cap",  hatc: "#c9a45a", hair: "#5a2f14", shirt: "#8a5a2b", pants: "#3d1f0c", beard: "#6b3b1a" },
+    skel1:   { hat: "band", band: "#7a1f1f", skin: "#ece7d4", hair: "#ece7d4", shirt: "#cfc9b4", stripes: "#6a6458", pants: "#d8d3bf", sockets: 1 },
+    skel2:   { hat: "tri", hatc: "#2a2a38", skin: "#ece7d4", hair: "#ece7d4", shirt: "#6a2a2a", pants: "#d8d3bf", sockets: 1, beard: null },
     kid:     { hat: "cap",  hatc: "#2f6fb0", hair: "#5a2f14", shirt: "#e8eef0", stripes: "#2f6fb0", pants: "#1d3a5c" }
   };
 
@@ -197,7 +204,9 @@
     cook: mkRoute([N(118, 166, "stir", 7, "r"), N(118, 182), N(152, 182), N(152, 156, "taste", 3, "r"), N(152, 182), N(118, 182)]),
     carp: mkRoute([N(46, 178, "hammer", 7, "u"), N(46, 188), N(100, 188), N(100, 170, "saw", 5, "r"), N(100, 188), N(46, 188)]),
     gunner: mkRoute([N(19, 116, "fire", 9, "r"), N(19, 154), N(92, 154), N(92, 141, "sword", 5, "r"), N(92, 154), N(19, 154)]),
-    kid: mkRoute([N(98, 106, "fish", 100, "u")])
+    kid: mkRoute([N(98, 106, "fish", 100, "u")]),
+    skel1: mkRoute([N(238, 54, "swab", 5, "r"), N(256, 54, "swab", 5, "l")]),
+    skel2: mkRoute([N(256, 178, "dig", 100, "d")])
   };
 
   /* ================= static sprites (outlined) ================= */
@@ -263,17 +272,17 @@
     R(s, 4, 2, 6, 7, "#d8b06a"); R(s, 5, 4, 1, 1, DARK); R(s, 8, 4, 1, 1, DARK); R(s, 4, 2, 6, 1, "#c8372d");
     R(s, 5, 11, 4, 4, "#c8372d"); R(s, 6, 12, 2, 2, "#fff");
   }, EDGE);
-  const SIGN = spr(18, 24, s => {
-    R(s, 2, 21, 14, 3, "rgba(0,40,0,.22)");
-    R(s, 8, 8, 2, 14, "#5a2f14");
-    R(s, 1, 2, 16, 9, "#c9a45a"); R(s, 1, 2, 16, 1, "#e8cf8a"); R(s, 1, 10, 16, 1, "#8a6a2a");
-    R(s, 6, 4, 6, 4, "#1a1a2e"); R(s, 7, 5, 1, 1, "#fff"); R(s, 10, 5, 1, 1, "#fff"); R(s, 7, 8, 4, 1, "#1a1a2e");
+  // tiki-style torch: wooden pole with a wrapped head; the flame is animated per frame
+  const TORCH = spr(8, 30, s => {
+    R(s, 1, 27, 6, 3, "rgba(0,40,0,.22)");
+    R(s, 3, 8, 2, 20, "#6b4a2a"); R(s, 3, 8, 1, 20, "#8a6a3a");
+    R(s, 2, 4, 4, 5, "#3a2a1a"); R(s, 2, 4, 4, 1, "#5a4a2a"); R(s, 2, 6, 4, 1, "#2a1c10");
   }, EDGE);
-  const LAMP = spr(9, 30, s => {
-    R(s, 1, 27, 7, 3, "rgba(0,40,0,.22)");
-    R(s, 4, 8, 2, 20, "#3a3a46"); R(s, 2, 26, 6, 2, "#3a3a46");
-    R(s, 1, 1, 8, 8, "#3a3a46"); R(s, 2, 2, 6, 6, "#ffe27a"); R(s, 3, 3, 2, 2, "#fff6c8"); R(s, 4, 0, 2, 1, "#3a3a46");
-  }, EDGE);
+  function torchFlame(c, x, y, T, i) {
+    const f = REDUCED ? 0 : Math.floor(T * 8 + i) % 3;
+    R(c, x - 2, y - 5 - (f === 1 ? 1 : 0), 4, 5, "#e8561a"); R(c, x - 1, y - 8 - (f === 2 ? 1 : 0), 2, 4, "#f2b632"); R(c, x - 1, y - 4, 2, 2, "#fff2b0");
+    if (f === 1) R(c, x, y - 10, 1, 1, "#e8561a");
+  }
   const ROCK = spr(20, 14, s => {
     R(s, 1, 10, 18, 3, "rgba(0,30,70,.3)");
     for (let y = 0; y < 11; y++) for (let x = 0; x < 20; x++) {
@@ -285,7 +294,6 @@
     R(s, 5, 1, 5, 2, "#6cae4a"); R(s, 7, 0, 2, 1, "#8fd05a");
   }, "#2c323a");
   const STONE = spr(8, 6, s => { R(s, 0, 4, 8, 2, "rgba(0,40,0,.2)"); R(s, 1, 1, 6, 4, "#8c8c96"); R(s, 2, 0, 3, 1, "#a9a9b4"); R(s, 1, 1, 6, 1, "#a9a9b4"); R(s, 1, 4, 6, 1, "#5e5e68"); }, EDGE);
-  const BUOY = spr(8, 12, s => { R(s, 1, 9, 6, 2, "rgba(0,30,80,.25)"); R(s, 2, 2, 4, 7, "#fff"); R(s, 2, 4, 4, 2, "#c8372d"); R(s, 3, 0, 2, 2, "#c8372d"); R(s, 3, 8, 2, 1, "#c8372d"); }, "#25405e");
 
   /* ================= world layers ================= */
   const WW = W + 2 * PADX, WH = H + 2 * PADY;
@@ -456,45 +464,44 @@
   const SC = mkc(64, 64), SG = SC.getContext("2d");           // crew scratch (feet at 32,48)
   const SHC = mkc(140, 96), SHG = SHC.getContext("2d");        // ship scratch (world x 180..320)
 
-  // One drooping palm frond: a tapered, notched leaf along a curve, light above and dark below.
+  // One pinnate palm frond: a drooping midrib with leaflets hanging from both sides, longest mid-way.
   function frond(g, cx, cy, deg, len, droop, pal) {
-    const a = deg * Math.PI / 180, dx = Math.cos(a), dy = -Math.sin(a), n = len + 4;
-    for (let i = 0; i <= n; i++) {
-      const s = i / n;
+    const a = deg * Math.PI / 180, dx = Math.cos(a), dy = -Math.sin(a);
+    for (let i = 0; i <= len; i++) {
+      const s = i / len;
       const px = cx + dx * len * s, py = cy + dy * len * s + droop * len * s * s;
       const tx = dx * len, ty = dy * len + 2 * droop * len * s, tl = Math.hypot(tx, ty);
-      const nx = -ty / tl, ny = tx / tl;
-      const w = (Math.sin(Math.PI * Math.min(1, s * 1.02)) * 2.8 + 0.5) * (i % 3 === 1 ? 0.55 : 1);
-      for (let k = -w; k <= w + 0.01; k += 0.5) {
-        const upper = k * -ny;                     // > 0 means the upper side of the leaf
-        const col = Math.abs(k) < 0.45 ? pal.spine : upper > 0.5 ? pal.hi : upper < -0.5 ? pal.lo : pal.mid;
-        R(g, px + nx * k, py + ny * k, 1, 1, col);
+      const ux = tx / tl, uy = ty / tl, nx = -uy, ny = ux;
+      R(g, px, py, 1, 1, pal.spine);
+      if (i >= 2 && i % 2 === 0 && s < 0.96) {
+        const ll = Math.max(2, Math.round(5 * Math.sin(Math.PI * Math.min(1, s * 1.1)) + 1));
+        [-1, 1].forEach(side => {
+          const lx = px + (ux * 0.55 + nx * side * 0.85) * ll, ly = py + (uy * 0.55 + ny * side * 0.85) * ll + ll * 0.5;
+          L(g, px, py, lx, ly, ny * side < 0 ? pal.hi : pal.lo);
+        });
       }
     }
   }
   function palm(g, x, y, T, ph, h, lean, swayPx) {
-    // trunk: gentle curve, tapering, with ring marks and a flared base
+    // trunk: slim, slightly bent, grey-brown with ring scars and a swollen base
     let tx = x, ty = y;
     for (let i = 0; i < h; i++) {
-      tx = x + Math.round(lean * 6 * Math.pow(i / h, 1.6)); ty = y - i;
-      const wid = i < 3 ? 6 : i < h * 0.5 ? 4 : 3, l = tx - Math.floor(wid / 2);
-      const ring = i % 3 === 0;
-      R(g, l, ty, wid, 1, ring ? "#6b3b1a" : "#9a6a38");
-      R(g, l, ty, 1, 1, ring ? "#8a5a2b" : "#c08a50");
-      R(g, l + wid - 1, ty, 1, 1, "#5a3a1a");
+      tx = x + Math.round(lean * 7 * Math.pow(i / h, 1.7)); ty = y - i;
+      const wid = i < 4 ? 5 : 3, l = tx - Math.floor(wid / 2), ring = i % 4 === 0;
+      R(g, l, ty, wid, 1, ring ? "#5e4528" : "#8a6a45");
+      R(g, l, ty, 1, 1, "#b8946a"); R(g, l + wid - 1, ty, 1, 1, "#4a3822");
     }
-    // crown knot and coconuts
-    R(g, tx - 2, ty - 1, 5, 4, "#6b3b1a");
-    R(g, tx - 4, ty + 2, 3, 3, "#4e2a12"); R(g, tx - 4, ty + 2, 1, 1, "#8a5a2b");
-    R(g, tx + 2, ty + 3, 3, 3, "#4e2a12"); R(g, tx + 2, ty + 3, 1, 1, "#8a5a2b");
-    R(g, tx - 1, ty + 4, 3, 3, "#5a3a1a"); R(g, tx - 1, ty + 4, 1, 1, "#9a6a38");
-    // fronds: back ones darker, then the front ones, swaying a little in the wind
+    // crown shaft and a cluster of coconuts
+    R(g, tx - 1, ty - 2, 3, 4, "#6e7a3a");
+    [[-3, 2, "#5a4a22"], [1, 3, "#6a7a2a"], [-1, 4, "#4e3a1a"], [3, 1, "#5a4a22"]].forEach(([dx, dy, col]) => { R(g, tx + dx, ty + dy, 3, 3, col); R(g, tx + dx, ty + dy, 1, 1, "#9a8a4a"); });
+    // fronds: dark ones behind, lit ones in front, plus a dead one hanging down; swaying a little
     const sw = swayPx || 0;
-    const back = { hi: "#4f9a35", mid: "#3a8a2a", lo: "#2a6e22", spine: "#1f5a1a" };
-    const front = { hi: "#8fe05a", mid: "#58b83a", lo: "#357f27", spine: "#2a6a1f" };
-    [[100, 12, 0.5], [75, 12, 0.6], [125, 13, 0.7]].forEach(([d, l, dr]) => frond(g, tx, ty, d + sw * 0.5, l, dr, back));
-    [[172, 19, 0.9], [8, 19, 0.9], [150, 18, 0.8], [30, 18, 0.8], [118, 15, 0.7], [62, 15, 0.7], [200, 14, 1.1], [-20, 14, 1.1]]
-      .forEach(([d, l, dr], i) => frond(g, tx, ty + 1, d + sw * (i % 2 ? 1 : -1) * (d > 90 && d < 180 ? 0.6 : 0.6), l, dr, front));
+    const back = { hi: "#5a9a34", lo: "#2f6a22", spine: "#264f1a" };
+    const front = { hi: "#9bd84e", lo: "#3f8f2c", spine: "#2f6420" };
+    [[96, 13, 0.4], [70, 13, 0.5], [122, 14, 0.6], [150, 14, 0.8]].forEach(([d, l, dr]) => frond(g, tx, ty, d + sw * 0.5, l, dr, back));
+    [[174, 21, 1.0], [6, 21, 1.0], [148, 20, 0.9], [34, 20, 0.9], [120, 17, 0.8], [60, 17, 0.8], [204, 15, 1.2], [-24, 15, 1.2]]
+      .forEach(([d, l, dr], i) => frond(g, tx, ty + 1, d + sw * (i % 2 ? 1 : -1) * 0.6, l, dr, front));
+    frond(g, tx, ty + 2, 262 + sw * 0.4, 10, 0.1, { hi: "#b0a24a", lo: "#7a6a2a", spine: "#5a4a1a" });
   }
   const PALM_CACHE = {};
   function palmSprite(h, lean, k) {
@@ -714,6 +721,19 @@
         }; break;
       }
       case "map": hr = [6, 2]; hl = [5, 3]; break;
+      case "swab": {
+        const o = Math.round(Math.sin(ph * 3) * 3);
+        hr = [5 + o, 1]; hl = [4 + o, 2];
+        post = h => { R(SG, h.r[0], h.r[1] - 8, 1, 10, "#8a5a2b"); R(SG, h.r[0] - 2, h.r[1] + 2, 5, 3, "#bfb08a"); R(SG, h.r[0] - 2, h.r[1] + 4, 5, 1, "#8a7a56"); }; break;
+      }
+      case "dig": {
+        const up = (ph * 1.2) % 1 >= 0.5;
+        hr = up ? [3, -4] : [3, 3]; hl = [-2, up ? -3 : 3];
+        post = h => {
+          R(SG, h.r[0], h.r[1] - 5, 1, 9, "#8a5a2b"); R(SG, h.r[0] - 1, h.r[1] + 4, 3, 4, "#9aa0aa");
+          if (up) { R(SG, h.r[0] + 3, h.r[1] + 2, 2, 2, "#6b4a2a"); R(SG, h.r[0] + 5, h.r[1] + 5, 1, 1, "#6b4a2a"); }
+        }; break;
+      }
       case "scope": hr = [3, -8]; hl = [-2, 0]; post = h => { L(SG, h.r[0], h.r[1], h.r[0] + 6, h.r[1] - 6, "#c9a45a"); R(SG, h.r[0] + 6, h.r[1] - 8, 2, 3, GOLD); }; break;
       case "write": {
         const j = Math.floor(ph * 3) % 2;
@@ -776,11 +796,6 @@
       const s = gx * 131 + gy * 977, x = gx * 20 + rnd(s) * 18, y = gy * 14 + rnd(s + 5) * 12;
       if (rnd(s + 9) < 0.45 && ((TA * 0.9 + rnd(s + 3) * 5) % 2) < 0.3 && waterDist(x, y) > 5) { R(c, x, y - 1, 1, 3, "#fff"); R(c, x - 1, y, 3, 1, "#fff"); }
     }
-    // buoys bobbing in the open water
-    [[-70, 40], [20, 18], [150, 50], [330, 30], [-30, -60], [260, -50], [180, -110], [-40, 170], [350, 160], [90, 232], [240, 238]].forEach(([x, y], i) => {
-      if (x > vx0 - 10 && x < vx1 && y > vy0 - 14 && y < vy1) blit(c, BUOY, x, y + (REDUCED ? 0 : Math.round(Math.sin(TA * 1.6 + i))));
-    });
-
     drawShip(c, TA);
     c.drawImage(front, -PADX, -PADY);
     // foam creeps up and down the whole coastline
@@ -795,7 +810,7 @@
     const add = (y, fn) => E.push({ y, fn });
     // core scenery
     add(172, () => blit(c, TENT, 172, 172 - 26));
-    [[28, 180], [306, 186], [302, 128], [228, 192], [60, 193], [112, 197], [182, 198], [262, 197], [34, 138]].forEach(([x, y], i) => add(y, () => drawPalm(c, x, y, TA, i, 27 + (i % 3) * 2, i % 2 ? 1 : -1)));
+    [[28, 180], [306, 186], [302, 128], [214, 194], [60, 193], [112, 197], [182, 198], [34, 138]].forEach(([x, y], i) => add(y, () => drawPalm(c, x, y, TA, i, 27 + (i % 3) * 2, i % 2 ? 1 : -1)));
     [[60, 174], [232, 150], [124, 190], [284, 190], [24, 154], [212, 192], [20, 184]].forEach(([x, y]) => add(y, () => blit(c, BUSH, x - 10, y - 13)));
     add(124, () => drawPalm(c, 22, 124, TA, 0, 30, 1));
     add(116, () => drawPalm(c, 118, 116, TA, 2, 26, -1));
@@ -807,11 +822,14 @@
     add(172, () => blit(c, BENCH, 30, 172 - 17));
     add(172, () => blit(c, PLANKS, 104, 172 - 8));
     add(106, () => blit(c, ROWBOAT, 136, 106 - 12));
-    add(110, () => blit(c, SIGN, 212, 110 - 22));
     add(140, () => blit(c, DUMMY, 99, 140 - 25));
-    add(112, () => blit(c, LAMP, 244, 112 - 28));
-    add(160, () => blit(c, LAMP, 62, 160 - 28));
-    [[-6, 150], [326, 118], [334, 176], [150, 214], [52, 222], [262, 218], [-10, 196], [-18, 112]].forEach(([x, y], i) => add(y, () => {
+    add(112, () => { blit(c, TORCH, 246, 112 - 28); torchFlame(c, 249, 112 - 28 + 4, TA, 0); });
+    add(160, () => { blit(c, TORCH, 62, 160 - 28); torchFlame(c, 65, 160 - 28 + 4, TA, 1); });
+    // where the skeleton is digging: a dirt mound and a red X
+    add(176, () => {
+      R(c, 262, 178, 9, 3, "#6b4a2a"); R(c, 263, 177, 7, 1, "#8a6a3a"); R(c, 264, 176, 4, 1, "#8a6a3a");
+      L(c, 248, 182, 254, 188, "#b22a22"); L(c, 254, 182, 248, 188, "#b22a22");
+    });    [[-6, 150], [326, 118], [334, 176], [150, 214], [52, 222], [262, 218], [-10, 196], [-18, 112]].forEach(([x, y], i) => add(y, () => {
       blit(c, ROCK, x - 10, y - 11);
       if (!REDUCED) { const w = Math.floor((Math.sin(TA * 1.5 + i) + 1) * 1.2); R(c, x - 11 - w, y, 2, 1, "rgba(255,255,255,.8)"); R(c, x + 10 + w, y, 2, 1, "rgba(255,255,255,.8)"); R(c, x - 8, y + 2 + w, 16, 1, "rgba(255,255,255,.55)"); }
     }));
@@ -861,7 +879,7 @@
       R(c, cx, 108, 1, 1, "#a82a22"); R(c, cx + 2, 108, 1, 1, "#a82a22"); R(c, cx + 4, 108, 1, 1, "#a82a22");
     });
     // crew
-    ["mate", "qm", "nav", "cook", "carp", "gunner", "kid", "captain"].forEach(id => add(Math.round(at(ROUTES[id], Tm).y), () => drawCrew(c, id, Tm, TA)));
+    ["mate", "qm", "nav", "cook", "carp", "gunner", "kid", "skel1", "skel2", "captain"].forEach(id => add(Math.round(at(ROUTES[id], Tm).y), () => drawCrew(c, id, Tm, TA)));
     add(48, () => {
       const d = REDUCED || Math.sin(TA * 0.6) >= 0 ? "r" : "l", s = d === "r" ? 1 : -1;
       SG.clearRect(0, 0, 64, 64);
