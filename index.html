@@ -271,7 +271,7 @@
 <!-- EDIT: the text of each island lives here. Change it freely. -->
 <template id="tpl-home-port">
   <h2>Home Port</h2>
-  <iframe class="harbor" src="homeport/" title="Animasi Home Port: kapten dan kru kapal bekerja di pelabuhan" loading="lazy" tabindex="-1"></iframe>
+  <iframe class="harbor" data-src="homeport/" title="Animasi Home Port: kapten dan kru kapal bekerja di pelabuhan" loading="lazy" tabindex="-1"></iframe>
   <p>Navigate the seas, find what you're looking for, or just enjoy the voyage.</p>
   <p><a href="https://github.com/megawan">github.com/megawan</a></p>
 </template>
@@ -844,6 +844,9 @@ function openPanel(id) {
   hull = HULL_MAX; drawHullHud();   // harbors repair the ship
   for (const k in keys) keys[k] = false;
   $('#closePanel').textContent = 'Weigh anchor';
+  // The harbor scene is a separate file that Pages caches for 10 minutes: ask for a per-minute URL so a fresh deploy shows up at once.
+  const harbor = $('iframe[data-src]', panelBody);
+  if (harbor) harbor.src = harbor.dataset.src + '?v=' + Math.floor(Date.now() / 60000);
   if (id === 'home-port') renderShop();
   $('#closePanel').focus();
 }
