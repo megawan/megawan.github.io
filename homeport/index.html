@@ -188,8 +188,8 @@
   const N = (x, y, act, dur, face, carry) => ({ x, y, act, dur: dur || 0, face, carry });
   const ROUTES = {
     captain: mkRoute([
-      N(224, 58, "steer", 7, "u"), N(236, 58, "look", 1.5, "d"), N(236, 104), N(236, 128), N(176, 128, "point", 4, "d"),
-      N(236, 128), N(236, 104), N(236, 58)
+      N(224, 58, "steer", 7, "u"), N(262, 58, "look", 1.5, "d"), N(262, 88), N(236, 88), N(236, 128), N(176, 128, "point", 4, "d"),
+      N(236, 128), N(236, 88), N(262, 88), N(262, 58)
     ]),
     mate: mkRoute([N(185, 126, "pick", 1.2, "u", true), N(214, 126, null, 0, "r", true), N(214, 160, "put", 1.2, "l", false), N(214, 126, null, 0, "u", false)]),
     nav: mkRoute([N(241, 140, "map", 6, "r"), N(241, 114, "scope", 5, "u")]),
@@ -411,15 +411,24 @@
       const col = FL[i % FL.length];
       R(c, x - 1, y, 1, 1, col); R(c, x + 1, y, 1, 1, col); R(c, x, y - 1, 1, 1, col); R(c, x, y + 1, 1, 1, col); R(c, x, y, 1, 1, "#ffe27a");
     }
-    // pier
-    R(c, 224, 78, 18, 26, "rgba(8,40,80,.28)");
-    for (let k = 0; k < 3; k++) { R(c, 225, 80 + k * 10, 3, 7, "#4a2a12"); R(c, 239, 80 + k * 10, 3, 7, "#4a2a12"); R(c, 225, 80 + k * 10, 3, 2, "#8a5a2b"); R(c, 239, 80 + k * 10, 3, 2, "#8a5a2b"); }
-    for (let y = 78; y < 104; y += 4) {
-      R(c, 226, y, 14, 3, "#b27a3e"); R(c, 226, y, 14, 1, "#d6a864"); R(c, 226, y + 3, 14, 1, "#6e3b1a");
-      R(c, 229 + (y % 8), y, 1, 3, "#8a5a2b");
-    }
-    R(c, 224, 78, 2, 26, "#6e3b1a"); R(c, 240, 78, 2, 26, "#6e3b1a");
-    R(c, 223, 77, 4, 3, "#3d1f0c"); R(c, 239, 77, 4, 3, "#3d1f0c");
+    // quay: a plank walkway alongside the ship, joined to the shore by a short jetty
+    const SHADOW = "rgba(8,30,60,.30)";
+    R(c, 192, 88, 106, 14, SHADOW); R(c, 224, 96, 18, 8, SHADOW);
+    for (let x = 196; x < 296; x += 18) { R(c, x, 90, 3, 12, "#3a2616"); R(c, x, 90, 1, 12, "#5a3d22"); R(c, x - 1, 100, 5, 2, "rgba(255,255,255,.35)"); }
+    for (let y = 80; y <= 98; y += 6) { }
+    R(c, 190, 80, 108, 9, "#a8844a"); R(c, 190, 80, 108, 1, "#cfae72"); R(c, 190, 88, 108, 1, "#4a3018");
+    for (let x = 190; x < 298; x += 6) R(c, x, 81, 1, 7, "#7a5a30");
+    R(c, 190, 80, 1, 9, "#4a3018"); R(c, 297, 80, 1, 9, "#4a3018");
+    // jetty to the beach
+    for (let y = 89; y < 100; y += 3) { R(c, 228, y, 12, 2, "#b08a52"); R(c, 228, y + 2, 12, 1, "#5a3d22"); }
+    R(c, 227, 89, 1, 11, "#3a2616"); R(c, 240, 89, 1, 11, "#3a2616");
+    // bollards and mooring lines up to the hull
+    [[203, 80], [233, 80], [283, 80]].forEach(([x, y]) => { R(c, x - 1, y - 3, 4, 5, "#241509"); R(c, x - 2, y - 4, 6, 2, "#3a2616"); });
+    R(c, 203, 68, 1, 12, "#d8cba0"); R(c, 283, 68, 1, 12, "#d8cba0");
+    R(c, 204, 69, 1, 11, "#a8987a"); R(c, 284, 69, 1, 11, "#a8987a");
+    // boarding ladder on the hull: rigid rails with rungs
+    R(c, 258, 58, 1, 22, "#6b4a2a"); R(c, 266, 58, 1, 22, "#6b4a2a");
+    for (let y = 61; y < 80; y += 4) R(c, 258, y, 9, 1, "#8a6a3a");
   })();
 
   /* ================= canvas + camera ================= */
@@ -534,126 +543,122 @@
     }
   }
 
-  // Pirate galleon in the chunky cartoon style: gold-striped hull, round portholes, black skull sail.
-  // The hull, castles, masts and rigging never change, so they are drawn once.
-  const topY = x => x < 212 ? 52 : x < 218 ? 55 : x < 272 ? 57 : 54;
-  const botY = x => {
-    let y = 78;
-    if (x < 210) y = 78 - Math.round(Math.pow((210 - x) / 26, 1.5) * 10);
-    if (x > 264) y = 78 - Math.round(Math.pow((x - 264) / 34, 1.5) * 18);
-    return y;
-  };
-  const disc2 = (g, cx, cy, r, col) => { for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r + 0.5) R(g, cx + x, cy + y, 1, 1, col); };
+  // A moored three-masted ship, side on: a hull sitting in the water with a straight waterline,
+  // raised poop deck and forecastle, gun ports, square canvas sails, ratlines and stays.
+  // Hull, masts and fixed rigging never change, so they are drawn once.
+  const WL = 74;                                                       // waterline
+  const hullTop = x => x < 214 ? 48 : x < 219 ? 52 : x < 264 ? 56 : x < 292 ? 52 : 50 - Math.floor((x - 292) / 2);
+  const hullL = y => 186 + Math.floor((y - 48) * 0.2);                 // slightly raked transom
+  const hullR = y => 299 - Math.round(Math.pow(Math.max(0, y - 46) / (WL - 46), 1.8) * 15);   // curved stem
+  const HULL = { rail: "#a8844a", plank: "#5f3d22", plank2: "#52341c", seam: "#3e2814", wale: "#21140a", port: "#0d0804", deep: "#2e1c0e", lid: "#4a301a" };
   const SHIP_STATIC = mkc(140, 96);
   (function () {
     const g = SHIP_STATIC.getContext("2d");
     g.translate(-180, 0);
-    const ROPE = "#e4e4dc";
-    // rope lines from the bowsprit and back to the stern (behind the sails)
-    [[316, 44, 272, 22], [272, 10, 240, 10], [240, 10, 192, 34]].forEach(([a, b2, c2, d]) => L(g, a, b2, c2, d, ROPE));
-    // masts
-    R(g, 236, 6, 3, 52, "#5a3414"); R(g, 236, 6, 1, 52, "#8a5a2b");
-    R(g, 270, 10, 3, 48, "#5a3414"); R(g, 270, 10, 1, 48, "#8a5a2b");
-    R(g, 205, 12, 3, 24, "#5a3414"); R(g, 205, 12, 1, 24, "#8a5a2b");
-    disc2(g, 207, 11, 2, "#d98a1c"); disc2(g, 271, 9, 2, "#d98a1c"); disc2(g, 237, 5, 2, "#d98a1c");
-    // stern cabin with window and flat roof (the lookout stands on top)
-    R(g, 188, 36, 24, 14, "#8a5a2b");
-    for (let y = 39; y < 49; y += 3) R(g, 188, y, 24, 1, "#6a3d1a");
-    R(g, 186, 32, 28, 5, "#5a3414"); R(g, 186, 32, 28, 1, "#c99a58");
-    R(g, 196, 40, 8, 7, "#9fd3ff"); R(g, 199, 40, 2, 7, "#8a5a2b"); R(g, 196, 43, 8, 1, "#8a5a2b");
-    for (let x = 187; x < 213; x += 5) R(g, x, 29, 1, 3, "#e4e4dc");
-    R(g, 187, 29, 26, 1, "#e4e4dc");
-    // deck seen from above, with white railing along the far side
-    for (let y = 49; y < 57; y++) R(g, 214, y, 282 - Math.floor((57 - y) * 1.5) - 214, 1, (y & 1) ? "#d9b46a" : "#c29a4a");
-    R(g, 216, 46, 62, 1, "#e4e4dc"); for (let x = 218; x < 278; x += 6) R(g, x, 46, 1, 4, "#e4e4dc");
-    // forecastle
-    R(g, 272, 46, 22, 9, "#8a5a2b"); R(g, 272, 46, 22, 2, "#c99a58"); for (let x = 275; x < 292; x += 5) R(g, x, 50, 1, 5, "#6a3d1a");
-    // hull column by column so the sheer and the keel follow their curves
-    for (let x = 184; x < 298; x++) {
-      const t = topY(x), b = botY(x), h = b - t;
-      for (let y = t; y <= b; y++) {
-        const rel = y - t;
+    const SPAR = "#3a2616", MASTHI = "#6b4a2a";
+    // masts: the lower masts, then the topmasts
+    [[235, 4, 52], [267, 14, 42], [205, 26, 22]].forEach(([x, y, h]) => { R(g, x, y, 3, h + 2, SPAR); R(g, x, y, 1, h + 2, MASTHI); });
+    // stays (clean 1:2 and 1:4 slopes)
+    L(g, 237, 8, 207, 23, "#2a1c10"); L(g, 237, 10, 269, 18, "#2a1c10"); L(g, 269, 18, 317, 42, "#2a1c10");
+    // deck seen from above behind the near rail
+    for (let y = 49; y < 56; y++) R(g, 216, y, 276 - 216 - Math.floor((56 - y) * 1.5), 1, (y & 1) ? "#b79660" : "#a58650");
+    R(g, 218, 47, 56, 1, HULL.rail); for (let x = 220; x < 274; x += 6) R(g, x, 44, 1, 4, "#a8844a");
+    // hull, row by row between the transom and the stem
+    for (let y = 46; y <= WL; y++) {
+      for (let x = hullL(y); x <= hullR(y); x++) {
+        const t = hullTop(x);
+        if (y < t) continue;
+        const rel = y - t, low = WL - y;
         let col;
-        if (rel < 2) col = "#f2f2ea";
-        else if (rel === 2) col = "#ffd25a";
-        else if (rel === 3) col = "#f5b335";
-        else if (rel === 4) col = "#d98a1c";
-        else if (rel === 5) col = "#4a2a12";
-        else if (rel >= h - 1) col = "#2d1708";
-        else if ((rel - 6) % 4 === 3) col = "#5a3010";
-        else if ((x + (((rel - 6) >> 2) % 2) * 7) % 14 === 0) col = "#5a3010";
-        else col = rel < 9 ? "#9a6530" : "#8a5a2b";
+        if (rel === 0) col = HULL.rail;
+        else if (rel === 1) col = "#7a5a30";
+        else if (low === 0) col = "#14100a";
+        else if (rel >= 9 && rel <= 10) col = HULL.wale;           // wale
+        else if (low <= 2) col = HULL.deep;
+        else if (rel % 3 === 2) col = HULL.seam;
+        else col = ((x + rel * 3) % 17 === 0) ? HULL.seam : (rel % 2 ? HULL.plank : HULL.plank2);
         R(g, x, y, 1, 1, col);
       }
     }
-    // round portholes with grey rims, anchor emblem on the bow
-    [208, 224, 252, 268].forEach(cx => {
-      const cy = topY(cx) + 11;
-      disc2(g, cx, cy, 4, "#2a2a32"); disc2(g, cx, cy, 3, "#a9b4c0"); disc2(g, cx, cy, 2, "#2a5a86"); R(g, cx - 1, cy - 1, 1, 1, "#8fd0ff");
+    // gun ports with open lids and a hint of a cannon
+    [214, 228, 246, 262].forEach(px => {
+      const t = hullTop(px);
+      R(g, px, t + 4, 6, 4, HULL.port); R(g, px, t + 2, 6, 2, HULL.lid); R(g, px + 1, t + 6, 4, 2, "#3a3a44");
     });
-    const Y = "#f5b335";
-    R(g, 284, 58, 1, 9, Y); R(g, 282, 60, 5, 1, Y); disc2(g, 284, 58, 1, Y);
-    R(g, 281, 65, 1, 2, Y); R(g, 287, 65, 1, 2, Y); R(g, 282, 67, 2, 1, Y); R(g, 285, 67, 2, 1, Y); R(g, 283, 68, 4, 1, Y);
-    // stern windows, figurehead and rudder
-    R(g, 187, 55, 3, 3, "#9fd3ff"); R(g, 187, 60, 3, 3, "#9fd3ff");
-    R(g, 296, 50, 3, 6, "#f5b335"); R(g, 298, 48, 2, 3, "#f5b335");
-    R(g, 183, 56, 2, 14, "#3d1f0c");
-    // bowsprit
-    L(g, 292, 50, 316, 42, "#5a3414"); L(g, 292, 51, 316, 43, "#5a3414");
-    // rope ladder down to the pier and the mooring line
-    R(g, 233, 58, 1, 20, "#e4d9a0"); R(g, 239, 58, 1, 20, "#e4d9a0");
-    for (let y = 60; y < 78; y += 3) R(g, 233, y, 7, 1, "#e4d9a0");
-    L(g, 224, 70, 232, 78, "#e4d9a0");
+    // great cabin windows under the poop deck, lantern and flagstaff
+    for (let i = 0; i < 3; i++) { R(g, 192 + i * 6, 54, 4, 4, "#f2c96a"); R(g, 192 + i * 6, 54, 4, 1, "#fff0b8"); }
+        R(g, 190, 44, 25, 1, "#a8844a"); for (let x = 190; x < 216; x += 5) R(g, x, 41, 1, 4, "#a8844a");
+    // forecastle rail, cathead with anchor, figurehead and bowsprit
+    R(g, 266, 49, 30, 1, "#a8844a"); for (let x = 268; x < 296; x += 6) R(g, x, 46, 1, 4, "#a8844a");
+    R(g, 289, 58, 2, 6, "#1c1c22"); R(g, 286, 62, 8, 2, "#1c1c22"); R(g, 286, 64, 2, 2, "#1c1c22"); R(g, 292, 64, 2, 2, "#1c1c22");
+    R(g, 296, 48, 3, 5, "#8a6a3a");
+    L(g, 292, 50, 318, 41, SPAR); L(g, 292, 51, 318, 42, SPAR);
+    R(g, 183, 56, 2, 14, "#241509");                                    // rudder post
   })();
 
-  const SAIL_DARK = { hi: "#6b83a0", mid: "#2c3b52", lo: "#1c2638" };
-  const SAIL_BLUE = { hi: "#9bb4cf", mid: "#5f7898", lo: "#40556f" };
-  const SAIL_RED = { hi: "#e0605a", mid: "#a8322d", lo: "#7a2320" };
-  const SAIL_TAN = { hi: "#f5dc9a", mid: "#dcb86c", lo: "#a8863f" };
+  // canvas sails: natural cloth lit from the left, seams every few rows, a little belly in the wind
+  const CLOTH = { hi: "#f4ecd2", mid: "#e0d4b4", lo: "#bfb08a", seam: "#a99a76" };
   function shipArt(g, T) {
-    const sw = (a, s) => REDUCED ? 0 : Math.sin(a) * s;
     g.drawImage(SHIP_STATIC, 180, 0);
-    // a billowing square sail with a lit left edge, a shaded right edge and a lit top border
-    const sail = (x0, y0, w, h, pal, ph, bulge) => {
+    const belly = REDUCED ? 1 : 1 + (Math.sin(T * 0.9) > 0 ? 1 : 0);
+    const sail = (x0, y0, w, h) => {
+      R(g, x0 - 2, y0 - 2, w + 4, 2, "#3a2616");                     // yard
       for (let r = 0; r < h; r++) {
-        const b = Math.round(Math.sin(Math.PI * r / h) * bulge), o = Math.round(sw(T * 1.5 + r * 0.17 + ph, 0.8));
-        const cut = Math.max(0, r - (h - 4));   // bottom corners curve in
-        const xl = x0 - b + o + cut, xr = x0 + w + b + o - cut, wd = xr - xl;
-        R(g, xl, y0 + r, wd, 1, r < 2 ? pal.hi : r > h - 3 ? pal.lo : pal.mid);
-        R(g, xl, y0 + r, 2, 1, pal.hi); R(g, xr - 3, y0 + r, 3, 1, pal.lo);
-        if (r % 9 === 8) R(g, xl, y0 + r, wd, 1, pal.lo);
+        const b = Math.round(Math.sin(Math.PI * (r + 0.5) / h) * belly), cut = r > h - 3 ? 1 : 0;
+        const xl = x0 - b + cut, xr = x0 + w + b - cut;
+        R(g, xl, y0 + r, xr - xl, 1, r % 6 === 5 ? CLOTH.seam : CLOTH.mid);
+        R(g, xl, y0 + r, 2, 1, CLOTH.hi); R(g, xr - 3, y0 + r, 3, 1, CLOTH.lo);
       }
-      R(g, x0 - 3, y0 - 2, w + 6, 2, "#3d2410");
+      for (let x = x0 + 5; x < x0 + w - 3; x += 7) R(g, x, y0, 1, h, CLOTH.seam);   // vertical cloth joins
+      for (let x = x0 + 3; x < x0 + w - 2; x += 5) R(g, x, y0 + 2, 1, 2, "#8a7a56");   // reef points
     };
-    sail(215, 17, 44, 34, SAIL_DARK, 0, 2);
-    sail(262, 12, 20, 11, SAIL_RED, 1, 1);
-    sail(259, 27, 26, 23, SAIL_BLUE, 1.6, 2);
-    sail(198, 15, 14, 17, SAIL_TAN, 3, 1);
-    // skull and crossed bones on the main sail
-    const cx = 237, cy = 33;
-    L(g, cx - 11, cy - 8, cx + 11, cy + 14, "#e8e4d2"); L(g, cx - 10, cy - 8, cx + 12, cy + 14, "#e8e4d2");
-    L(g, cx + 11, cy - 8, cx - 11, cy + 14, "#e8e4d2"); L(g, cx + 12, cy - 8, cx - 10, cy + 14, "#e8e4d2");
-    [[-13, -10], [11, -10], [-13, 13], [11, 13]].forEach(([dx, dy]) => R(g, cx + dx, cy + dy, 3, 3, "#e8e4d2"));
-    R(g, cx - 7, cy - 7, 14, 12, SAIL_DARK.mid);
-    ["..XXXXXXX..", ".XXXXXXXXX.", "XXXX...XXXX", "XXX.XXX.XXX", ".XXXXXXXXX.", "..XXXXXXX..", "...X.X.X..."].forEach((row, j) => {
-      for (let i = 0; i < 11; i++) if (row[i] === "X") R(g, cx - 5 + i, cy - 6 + j, 1, 1, "#f4f1e4");
+    sail(216, 26, 40, 22);       // main course
+    sail(222, 13, 28, 11);       // main topsail
+    sail(252, 32, 32, 16);       // fore course
+    sail(258, 22, 20, 8);        // fore topsail
+    // fore-and-aft sails: spanker on the mizzen and a jib on the bowsprit
+    tri(g, 208, 29, 208, 47, 190, 47, CLOTH.mid); tri(g, 208, 34, 208, 47, 198, 47, CLOTH.hi);
+    R(g, 189, 47, 20, 1, "#3a2616");
+    tri(g, 269, 30, 306, 40, 291, 48, CLOTH.mid); tri(g, 269, 35, 300, 41, 291, 47, CLOTH.hi);
+    // ratlines: two shrouds per mast with rungs, drawn in front of the sails
+    const ratline = (x, y, dxl, dxr, len) => {
+      for (let i = 0; i <= len; i++) {
+        const l = x - Math.round(i * dxl / len), r = x + Math.round(i * dxr / len);
+        R(g, l, y + i, 1, 1, "#2a1c10"); R(g, r, y + i, 1, 1, "#2a1c10");
+        if (i % 4 === 2) R(g, l, y + i, r - l + 1, 1, "#4a3622");
+      }
+    };
+    ratline(236, 24, 6, 6, 28); ratline(268, 34, 5, 5, 18); ratline(206, 34, 4, 4, 12);
+    // masthead flags: a black ensign with a skull on the main, a small red pennant on the fore
+    drawSmallFlag(g, 238, 2, T);
+  }
+  // 14x9 black flag with a plain skull, waving column by column
+  const SMALLFLAG = spr(14, 9, g => {
+    R(g, 0, 0, 14, 9, "#15152a"); R(g, 0, 0, 14, 1, "#2c2c4a");
+    [".XXXXX.", "XXXXXXX", "X.XXX.X", "XXXXXXX", ".X.X.X."].forEach((row, j) => {
+      for (let i = 0; i < 7; i++) if (row[i] === "X") R(g, 3 + i, 2 + j, 1, 1, "#f1ecd8");
     });
-    R(g, cx - 4, cy - 4, 3, 3, SAIL_DARK.lo); R(g, cx + 1, cy - 4, 3, 3, SAIL_DARK.lo);
-    // red pennants on the mast tops
-    for (let i = 0; i < 12; i++) { const o = Math.round(sw(T * 5 - i * 0.7, 1)); R(g, 273 + i, 5 + o + (i >> 2), 1, Math.max(1, 4 - (i >> 2)), "#d8312a"); }
-    for (let i = 0; i < 14; i++) { const o = Math.round(sw(T * 5 - i * 0.7 + 1, 1)); R(g, 239 + i, 1 + o + (i >> 2), 1, Math.max(1, 4 - (i >> 2)), "#d8312a"); }
-    for (let i = 0; i < 8; i++) { const o = Math.round(sw(T * 5 - i * 0.7 + 2, 1)); R(g, 209 + i, 8 + o + (i >> 2), 1, Math.max(1, 3 - (i >> 2)), "#d8312a"); }
+  });
+  function drawSmallFlag(g, x, y, T) {
+    for (let i = 0; i < 14; i++) {
+      const o = REDUCED ? 0 : Math.round(Math.sin(T * 5 - i * 0.6) * Math.min(1, i / 5));
+      g.drawImage(SMALLFLAG, i, 0, 1, 9, x + i, y + o, 1, 9);
+    }
   }
   function drawShip(c, T) {
-    [[104, 78], [92, 79], [76, 80], [52, 81]].forEach(([w, y]) => R(c, 241 - w / 2, y, w, 1, "rgba(0,30,70,.22)"));
+    // the hull's reflection ripples under the waterline
+    for (let k = 0; k < 7; k++) {
+      const w = 6 + Math.round(Math.sin((REDUCED ? 0 : T * 2) + k * 1.3) * 1.5), a = (0.34 - k * 0.04).toFixed(2);
+      R(c, 188 + k * 2 + w % 2, WL + 1 + k, 104 - k * 4, 1, "rgba(10,22,44," + a + ")");
+    }
     SHG.setTransform(1, 0, 0, 1, 0, 0); SHG.clearRect(0, 0, 140, 96);
     SHG.translate(-180, 0); shipArt(SHG, T); SHG.setTransform(1, 0, 0, 1, 0, 0);
     edge(SHG, 140, 96, EDGE);
     c.drawImage(SHC, 180, 0);
-    for (let i = 0; i < 12; i++) {
-      const x = 184 + ((i * 10 + (REDUCED ? 0 : Math.floor(T * 8))) % 108);
-      const y = botY(x);
-      R(c, x, y, 5, 1, "#e6f4ff"); R(c, x + 2, y + 1, 4, 1, "#9bd4f6");
+    // lapping water at the waterline
+    for (let x = 184; x < 298; x++) {
+      const w = Math.floor((Math.sin((REDUCED ? 0 : T * 2) + x / 5) + 1) * 0.9);
+      R(c, x, WL + 1 - (w ? 1 : 0), 1, 1, "#e6f4ff"); if (w) R(c, x, WL + 2, 1, 1, "rgba(150,210,245,.8)");
     }
   }
 
@@ -857,13 +862,13 @@
     });
     // crew
     ["mate", "qm", "nav", "cook", "carp", "gunner", "kid", "captain"].forEach(id => add(Math.round(at(ROUTES[id], Tm).y), () => drawCrew(c, id, Tm, TA)));
-    add(33, () => {
+    add(48, () => {
       const d = REDUCED || Math.sin(TA * 0.6) >= 0 ? "r" : "l", s = d === "r" ? 1 : -1;
       SG.clearRect(0, 0, 64, 64);
       const h = person(SG, 32, 48, { ...LOOK.lookout, dir: d, hl: [s * 3, -5], hr: [s * 5, -6] });
       L(SG, h.r[0], h.r[1], h.r[0] + s * 6, h.r[1] - 3, "#c9a45a"); R(SG, h.r[0] + s * 6, h.r[1] - 4, 1, 3, GOLD);
       edge(SG, 64, 64, EDGE);
-      c.drawImage(SC, 195 - 32, 33 - 48);
+      c.drawImage(SC, 197 - 32, 48 - 48);
     });
     // parrot + gull shadows, then flyers on top
     add(1000, () => {
