@@ -377,12 +377,10 @@ const Stats = (() => {
       s.dataset.goatcounter = 'https://' + code + '.goatcounter.com/count';
       document.head.appendChild(s);
       const note = $('#visits'); if (!note) return;
-      const base = 'Visits are counted anonymously, without cookies.';
-      note.hidden = false; note.textContent = base;
       if (typeof fetch === 'function') {
         fetch('https://' + code + '.goatcounter.com/counter/TOTAL.json')
           .then(r => r.ok ? r.json() : Promise.reject())
-          .then(d => { if (d && d.count) note.textContent = base + ' ' + d.count + ' visits so far.'; })
+          .then(d => { if (d && d.count) { note.textContent = d.count + ' visits so far.'; note.hidden = false; } })
           .catch(() => {});
       }
     },
